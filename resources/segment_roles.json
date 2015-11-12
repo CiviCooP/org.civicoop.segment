@@ -1,34 +1,34 @@
 {
-  "civicoop_segment_role":{
-    "name":"civicoop_segment_role",
-    "title":"Roles for Contact Segments",
-    "description":"Roles for Contact Segments, required by extension org.civicoop.contactsegment",
-    "values":{
-      "expert":{
-        "name":"expert",
-        "label":"Expert",
-        "value":"Expert"
-      },
-      "customer":{
-        "name":"customer",
-        "label":"Customer",
-        "value":"Customer"
-      },
-      "country":{
-        "name":"country",
-        "label":"Country",
-        "value":"Country"
-      },
-      "recruitment_team_member":{
-        "name":"recruitment_team_member",
-        "label":"Recruitment Team Member",
-        "value":"Recruitment Team Member"
-      },
-      "sector_coordinator":{
-        "name":"sector_coordinator",
-        "label":"Sector Coordinator",
-        "value":"Sector Coordinator"
-      }
+  "name":"civicoop_segment_role",
+  "title":"Roles for Contact Segments",
+  "description":"Roles for Contact Segments, required by extension org.civicoop.contactsegment",
+  "is_reserved":1,
+  "is_active":1,
+  "values":{
+    "expert":{
+      "name":"expert",
+      "label":"Expert",
+      "value":"Expert"
+    },
+    "customer":{
+      "name":"customer",
+      "label":"Customer",
+      "value":"Customer"
+    },
+    "country":{
+      "name":"country",
+      "label":"Country",
+      "value":"Country"
+    },
+    "recruitment_team_member":{
+      "name":"recruitment_team_member",
+      "label":"Recruitment Team Member",
+      "value":"Recruitment Team Member"
+    },
+    "sector_coordinator":{
+      "name":"sector_coordinator",
+      "label":"Sector Coordinator",
+      "value":"Sector Coordinator"
     }
   }
 }

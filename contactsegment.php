@@ -27,8 +27,6 @@ function contactsegment_civicrm_xmlMenu(&$files) {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_install
  */
 function contactsegment_civicrm_install() {
-  // instantiate config to create option group if not exists
-  CRM_Contactsegment_Config::singleton();
   _contactsegment_civix_civicrm_install();
 }
 
@@ -38,6 +36,9 @@ function contactsegment_civicrm_install() {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_uninstall
  */
 function contactsegment_civicrm_uninstall() {
+  require_once 'CRM/Contactsegment/Utils.php';
+  require_once 'CRM/Contactsegment/Config.php';
+  CRM_Contactsegment_Utils::removeRoleOptionGroup();
   _contactsegment_civix_civicrm_uninstall();
 }
 
@@ -47,6 +48,8 @@ function contactsegment_civicrm_uninstall() {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_enable
  */
 function contactsegment_civicrm_enable() {
+  // instantiate config to create option group if not exists
+  CRM_Contactsegment_Config::singleton();
   _contactsegment_civix_civicrm_enable();
 }
 
@@ -121,59 +124,4 @@ _contactsegment_civix_civicrm_angularModules($angularModules);
  */
 function contactsegment_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
   _contactsegment_civix_civicrm_alterSettingsFolders($metaDataFolders);
-}
-
-/**
- * Functions below this ship commented out. Uncomment as required.
- *
-
-/**
- * Implements hook_civicrm_preProcess().
- *
- * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_preProcess
- *
-function contactsegment_civicrm_preProcess($formName, &$form) {
-
-}
-
-/**
- * Implements hook_civicrm_navigationMenu
- *
- * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
- */
-function contactsegment_civicrm_navigationMenu(&$params) {
-
-  //add menu entry for Contact Segment Settings to Administer>CiviContribute menu
-  $contactSegmentSettingsUrl = 'civicrm/contactsegmentsetting';
-  // now, by default we want to add it to the CiviCRM Administer/Customize Data and Screens menu -> find it
-  $administerMenuId = 0;
-  $administerCustomizeMenuId = 0;
-  foreach ($params as $key => $value) {
-    if ($value['attributes']['name'] == 'Administer') {
-      $administerMenuId = $key;
-      foreach ($params[$administerMenuId]['child'] as $childKey => $childValue) {
-        if ($childValue['attributes']['name'] == 'Customize Data and Screens') {
-          $administerCustomizeMenuId = $childKey;
-          break;
-        }
-      }
-      break;
-    }
-  }
-  if (empty($administerMenuId)) {
-    error_log('org.civicoop.contactsegment: Cannot find parent menu Administer/Customize Data and Screens for ' . $contactSegmentSettingsUrl);
-  } else {
-    $contactSegmentSettingsMenu = array(
-      'label' => ts('Contact Segment Settings', array('domain' => 'org.civicoop.contactsegment')),
-      'name' => 'Contact Segment Settings',
-      'url' => $contactSegmentSettingsUrl,
-      'permission' => 'administer CiviCRM',
-      'operator' => NULL,
-      'parentID' => $administerCustomizeMenuId,
-      'navID' => CRM_Contactsegment_Utils::createUniqueNavID($params[$administerMenuId]['child']),
-      'active' => 1
-    );
-    CRM_Contactsegment_Utils::addNavigationMenuEntry($params[$administerMenuId]['child'][$administerCustomizeMenuId],
-      $contactSegmentSettingsMenu);
-  }
 }

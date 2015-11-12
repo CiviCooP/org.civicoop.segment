@@ -9,33 +9,86 @@
  */
 class CRM_Contactsegment_Config {
   static private $_singleton = NULL;
-  protected $roleTypeOptionGroup = array();
+  protected $_roleOptionGroup = array();
+  private $_resourcesPath = null;
 
   /**
-   * Constructor method
+   * CRM_Contactsegment_Config constructor.
    */
-  public function __construct() {
-    // TODO : implement
+  function __construct() {
+    $settings = civicrm_api3('Setting', 'Getsingle', array());
+    $this->_resourcesPath = $settings['extensionsDir'].'/org.civicoop.contactsegment/resources/';
+    $this->setRoleOptionGroup();
   }
 
   /**
-   * Method to get the option group id of the role types
+   * Getter for role option group
    *
-   * @return int
-   * @access public
-   */
-  public function getRoleTypeOptionGroupId() {
-    return $this->roleTypeOptionGroup['id'];
-  }
-
-  /**
-   * Method to get the option group (with option values) of the role types
-   *
+   * @param null $key
    * @return array
    * @access public
    */
-  public function getRoleTypeOptionGroup() {
-    return $this->roleTypeOptionGroup();
+  public function getRoleOptionGroup($key = null) {
+    if (!empty($key) && is_array($this->_roleOptionGroup)) {
+      return $this->_roleOptionGroup[$key];
+    } else {
+      return $this->_roleOptionGroup;
+    }
+  }
+
+  /**
+   * Method to retrieve or create option group for roles
+   *
+   * @throws Exception when no group found and unable to create one
+   */
+  private function setRoleOptionGroup() {
+    $resourcesArray = $this->getJsonResourcesArray("segment_roles.json");
+    $currentOptionGroup = CRM_Contactsegment_Utils::getOptionGroupWithName($resourcesArray['name']);
+    if ($currentOptionGroup == FALSE) {
+      $createOptionGroupParams = array(
+        'name' => $resourcesArray['name'],
+        'title' => $resourcesArray['title'],
+        'description' => $resourcesArray['description'],
+        'is_active' => $resourcesArray['is_active'],
+        'is_reserved' => $resourcesArray['is_reserved']);
+      $currentOptionGroup = CRM_Contactsegment_Utils::createOptionGroup($createOptionGroupParams);
+      if ($currentOptionGroup == FALSE) {
+        throw new Exception("Could not create a new option group with name civicoop_contact_segment nor find an existing one");
+      }
+    }
+    $optionValues = array();
+    foreach ($resourcesArray['values'] as $resourceName => $resourceValue) {
+      $resourceValue['option_group_id'] = $currentOptionGroup['id'];
+      $optionValue = CRM_Contactsegment_Utils::createOptionValue($resourceValue);
+      if ($optionValue != FALSE) {
+        foreach ($optionValue['values'] as $optionValueId => $optionValue) {
+          $optionValues[$optionValueId] = $optionValue;
+        }
+      }
+    }
+    $currentOptionGroup['values'] = $optionValues;
+    $this->_roleOptionGroup = $currentOptionGroup;
+  }
+
+  /**
+   * Method to read json resources file
+   *
+   * @param $fileName
+   * @return array|mixed
+   * @throws Exception when file not found
+   */
+  private function getJsonResourcesArray($fileName) {
+    $return = array();
+    if (!empty($fileName)) {
+      $jsonFile = $this->_resourcesPath.$fileName;
+      if (!file_exists($jsonFile)) {
+        throw new Exception("Could not load ".$fileName." required for extension org.civicoop.contactsegment,
+        contact your system administrator");
+      }
+      $jsonData = file_get_contents($jsonFile);
+      $return = json_decode($jsonData, true);
+    }
+    return $return;
   }
 
   /**
