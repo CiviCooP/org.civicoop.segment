@@ -117,4 +117,45 @@ class CRM_Contactsegment_Utils {
     }
   }
 
+  /**
+   * Method to determine max key in navigation menu (core solutions do not cater for child keys!)
+   *
+   * @param array $menuItems
+   * @return int $maxKey
+   */
+  public static function getMaxMenuKey($menuItems) {
+    $maxKey = 0;
+    foreach ($menuItems as $menuKey => $menuItem) {
+      if ($menuKey > $maxKey) {
+        $maxKey = $menuKey;
+      }
+      if (isset($menuItem['child'])) {
+        foreach ($menuItem['child'] as $childKey => $child) {
+          if ($childKey > $maxKey) {
+            $maxKey = $childKey;
+          }
+        }
+      }
+    }
+    return $maxKey;
+  }
+
+  /**
+   * Method to generate a name from a label, replacing some chars with "_"
+   *
+   * @param $label
+   * @return mixed
+   */
+  public static function generateNameFromLabel($label) {
+    if (empty($label)) {
+      return $label;
+    }
+    $name = strtolower($label);
+    $config = CRM_Contactsegment_Config::singleton();
+    foreach ($config->getReplaceableChars() as $char) {
+      $name = str_replace($char, "_", $name);
+      $name = str_replace("__", "_", $name);
+    }
+    return $name;
+  }
 }

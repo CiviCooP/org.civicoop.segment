@@ -9,9 +9,10 @@
  */
 class CRM_Contactsegment_Config {
   static private $_singleton = NULL;
-  protected $_roleOptionGroup = array();
-  private $_resourcesPath = null;
 
+  protected $_roleOptionGroup = array();
+  protected $_replaceableChars = array();
+  protected $_resourcesPath = null;
   /**
    * CRM_Contactsegment_Config constructor.
    */
@@ -19,6 +20,26 @@ class CRM_Contactsegment_Config {
     $settings = civicrm_api3('Setting', 'Getsingle', array());
     $this->_resourcesPath = $settings['extensionsDir'].'/org.civicoop.contactsegment/resources/';
     $this->setRoleOptionGroup();
+    $this->_replaceableChars = array(" ", "-", ",", "/", "&", ")", "(", ":", ";" );
+  }
+
+  /**
+   * Getter for resource path
+   *
+   * @return string
+   * @access public
+   */
+  public function getResourcesPath() {
+    return $this->_resourcesPath;
+  }
+  /**
+   * Getter for replaceable Characters
+   *
+   * @return array
+   * @access public
+   */
+  public function getReplaceableChars() {
+    return $this->_replaceableChars;
   }
 
   /**
@@ -77,7 +98,7 @@ class CRM_Contactsegment_Config {
    * @return array|mixed
    * @throws Exception when file not found
    */
-  private function getJsonResourcesArray($fileName) {
+  public function getJsonResourcesArray($fileName) {
     $return = array();
     if (!empty($fileName)) {
       $jsonFile = $this->_resourcesPath.$fileName;

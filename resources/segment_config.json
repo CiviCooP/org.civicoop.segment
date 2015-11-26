@@ -1,4 +1,14 @@
 {
-  "segment":"Sector",
-  "child":"Area of Expertise"
+    "parent": {
+        "label": "Sector",
+        "roles": [
+            "Expert"
+        ]
+    },
+    "child": {
+        "label": "Area of Expertise",
+        "roles": [
+            "Expert"
+        ]
+    }
 }

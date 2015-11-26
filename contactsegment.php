@@ -125,3 +125,54 @@ _contactsegment_civix_civicrm_angularModules($angularModules);
 function contactsegment_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
   _contactsegment_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
+
+/**
+ * Implementation of hook civicrm_navigationMenu
+ * to add a contact segment menu item to the Administer/Customize Data and Screens menu
+ *
+ * @param array $params
+ */
+function contactsegment_civicrm_navigationMenu( &$params ) {
+  $maxKey = CRM_Contactsegment_Utils::getMaxMenuKey($params);
+  $menuAdministerId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_Navigation', 'Administer', 'id', 'name');
+  $menuParentId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_Navigation', 'Customize Data and Screens', 'id', 'name');
+  $params[$menuAdministerId]['child'][$menuParentId]['child'][$maxKey+1] =
+    array (
+    'attributes' => array (
+      'label'      => ts('Manage Contact Segments'),
+      'name'       => ts('Manage Contact Segments'),
+      'url'        => NULL,
+      'permission' => NULL,
+      'operator'   => NULL,
+      'separator'  => NULL,
+      'parentID'   => $menuParentId,
+      'navID'      => $maxKey+1,
+      'active'     => 1
+    ),
+    'child' => array(
+        1 => array(
+          'attributes' => array (
+            'label'      => ts('Contact Segment Settings'),
+            'name'       => ts('Contact Segment Settings'),
+            'url'        => CRM_Utils_System::url('civicrm/segmentsetting', 'reset=1', true),
+            'permission' => 'administer CiviCRM',
+            'operator'   => NULL,
+            'separator'  => NULL,
+            'parentID'   => $maxKey+1,
+            'navID'      => 1,
+            'active'     => 1
+          ),
+        ),
+        2 => array(
+          'attributes' => array (
+            'label'      => ts('Contact Segments'),
+            'name'       => ts('Contact Segments'),
+            'url'        => CRM_Utils_System::url('civicrm/segmentlist', 'force=1&crmRowCount=25', true),
+            'permission' => 'administer CiviCRM',
+            'operator'   => NULL,
+            'separator'  => NULL,
+            'parentID'   => $maxKey+1,
+            'navID'      => 2,
+            'active'     => 1
+          ))));
+}
