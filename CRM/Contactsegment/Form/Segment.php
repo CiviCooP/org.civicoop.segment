@@ -45,13 +45,18 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
   function preProcess() {
     $this->_segmentId = CRM_Utils_Request::retrieve('sid', 'Integer');
     $this->getSegmentLabels();
+    if ($this->_action != CRM_Core_Action::ADD && $this->_segmentId) {
+      $this->_segment = civicrm_api3('Segment', 'Getsingle', array('id' => $this->_segmentId));
+    }
+    if ($this->_action == CRM_Core_Action::DELETE) {
+      $this->deleteSegmentAndReturn();
+    }
     switch ($this->_action) {
       case CRM_Core_Action::ADD:
         $actionLabel = "Add";
         $segmentTypeLabel = $this->_parentLabel." or ".$this->_childLabel;
         break;
       case CRM_Core_Action::UPDATE:
-        $this->_segment = civicrm_api3('Segment', 'Getsingle', array('id' => $this->_segmentId));
         $actionLabel = "Edit";
         if (!$this->_segment['parent_id']) {
           $segmentTypeLabel = $this->_parentLabel;
@@ -60,7 +65,6 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
         }
         break;
       case CRM_Core_Action::VIEW:
-        $this->_segment = civicrm_api3('Segment', 'Getsingle', array('id' => $this->_segmentId));
         $actionLabel = "View";
         if (!$this->_segment['parent_id']) {
           $segmentTypeLabel = $this->_parentLabel;
@@ -72,9 +76,6 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
     CRM_Utils_System::setTitle($segmentTypeLabel);
     $this->assign('actionLabel', $actionLabel);
     $this->assign('segmentTypeLabel', $segmentTypeLabel);
-      if ($this->_action == CRM_Core_Action::DELETE) {
-        $this->deleteSegmentAndReturn();
-    }
   }
 
   /**
@@ -119,10 +120,8 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
    * @access protected
    */
   protected function addFormElements() {
-    $config = CRM_Contactsegment_Config::singleton();
     $parentList = $this->getParentList();
     $this->add('hidden', 'segment_id');
-    $this->add('text', 'segment_type', ts('Type'));
     $this->add('text', 'segment_label', ts('Label'), array('size' => 128), true);
     if ($this->_action == CRM_Core_Action::ADD) {
       $types = array($this->_parentLabel, $this->_childLabel);
@@ -144,8 +143,28 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
    * @access protected
    */
   protected function saveSegment($formValues) {
-    // TODO : implement function to save segment
-
+    $params = array();
+    if ($formValues['segment_id']) {
+      $params['id'] = $formValues['segment_id'];
+    }
+    $params['label'] = $formValues['segment_label'];
+    $params['name'] = CRM_Contactsegment_Utils::generateNameFromLabel($params['label']);
+    switch ($formValues['segment_type']) {
+      case "parent":
+        $params['parent_id'] = NULL;
+        $statusTitle = $this->_parentLabel." saved";
+        $statusMessage = $this->_parentLabel." ".$params['label']." saved";
+        break;
+      case "child":
+        $params['parent_id'] = $formValues['segment_parent'];
+        $statusTitle = $this->_childLabel." saved";
+        $statusMessage = $this->_childLabel." ".$this->_segment['label']." from "
+          .$this->_parentLabel." ".$this->getSegmentParentLabel($formValues['segment_parent'])." saved";
+        break;
+    }
+    $this->_segment = civicrm_api3('Segment', 'Create', $params);
+    $session = CRM_Core_Session::singleton();
+    $session->setStatus($statusMessage, $statusTitle, "success");
   }
 
   /**
@@ -153,18 +172,15 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
    *
    */
   protected function deleteSegmentAndReturn() {
-    // TODO : refactor to api function
-    $config = CRM_Contactsegment_Config::singleton();
-    if (!$this->_segmentParentId) {
-      $statusMessage = $config->getParentSegmentLabel().$this->_segment['label']." deleted";
-      $statusTitle = $config->getParentSegmentLabel()." deleted";
+    if (!$this->_segment['parent_id']) {
+      $statusMessage = $this->_parentLabel." ".$this->_segment['label']." deleted";
+      $statusTitle = $this->_parentLabel." deleted";
     } else {
-      $statusMessage = $config->getChildSegmentLabel().$this->_segment['label']." from "
-        .$config->getParentSegmentLabel()." "
-        .CRM_Contactsegment_BAO_Segment::getSegmentLabelWithId($this->_segment['parent_id'])." deleted";
-      $statusTitle = $config->getChildSegmentLabel()." deleted";
+      $statusMessage = $this->_childLabel." ".$this->_segment['label']." from "
+        .$this->_parentLabel." ".$this->getSegmentParentLabel($this->_segment['parent_id'])." deleted";
+      $statusTitle = $this->_childLabel." deleted";
     }
-    CRM_Contactsegment_BAO_Segment::deleteById($this->_segmentId);
+    civicrm_api3('Segment', 'Delete', array('id' => $this->_segmentId));
     $session = CRM_Core_Session::singleton();
     $session->setStatus($statusMessage, $statusTitle, "success");
     CRM_Utils_System::redirect($session->readUserContext());
@@ -179,12 +195,27 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
   protected function getParentList() {
     $parentList = array();
     $parentList[0] = "- select -";
-    $parents = CRM_Contactsegment_BAO_Segment::getParentSegments();
-    foreach ($parents as $parentId => $parent) {
+    $parents = civicrm_api3('Segment', 'Get', array('parent_id' => 'null'));
+    foreach ($parents['values'] as $parentId => $parent) {
       $parentList[$parentId] = $parent['label'];
     }
     asort($parentList);
     return $parentList;
+  }
+
+  /**
+   * Method to get the label of a segment
+   *
+   * @param int $parentId
+   * @return array|string
+   */
+  protected function getSegmentParentLabel($parentId) {
+    $parentParams = array('id' => $parentId, 'return' => 'label');
+    try {
+      return civicrm_api3('Segment', 'Getvalue', $parentParams);
+    } catch (CiviCRM_API3_Exception $ex) {
+      return "";
+    }
   }
 }
 

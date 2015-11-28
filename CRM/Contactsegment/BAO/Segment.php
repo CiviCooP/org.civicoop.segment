@@ -31,6 +31,9 @@ class CRM_Contactsegment_BAO_Segment extends CRM_Contactsegment_DAO_Segment {
     while ($segment->fetch()) {
       $row = array();
       self::storeValues($segment, $row);
+      if (!$row['parent_id']) {
+        $row['parent_id'] = NULL;
+      }
       $result[$row['id']] = $row;
     }
     return $result;

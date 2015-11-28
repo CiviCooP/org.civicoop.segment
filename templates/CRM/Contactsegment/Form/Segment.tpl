@@ -6,8 +6,8 @@
     {include file="CRM/common/formButtons.tpl" location="top"}
   </div>
   <div class="crm-section">
-    <div class="label">{$form.segment_type.label}</div>
-    <div class="content">{$form.segment_type.html}</div>
+    <div class="label">{$form.segment_type_list.label}</div>
+    <div class="content">{$form.segment_type_list.html}</div>
     <div class="clear"></div>
   </div>
   <div class="crm-section">
@@ -30,8 +30,8 @@
 {literal}
   <script type="text/javascript">
     cj(document).ready(function() {
-      cj('#segment_type').parent().parent().hide();
-      if (cj('#segment_type').val() != "child") {
+      cj('#segment_typeList').parent().parent().hide();
+      if (cj('#segment_parent').val() == 0) {
         setParent();
       } else {
         setChild();
