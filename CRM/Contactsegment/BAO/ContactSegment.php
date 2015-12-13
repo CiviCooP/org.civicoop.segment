@@ -46,13 +46,21 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
    */
   public static function add($params) {
     $result = array();
+    $preContactSegment = array();
     if (empty($params)) {
-      throw new Exception('Params can not be empty when adding or updating a contact segment');
+      throw new Exception('Params can not be empty when adding or updating a contact segment', 9003);
     }
     $contactSegment = new CRM_Contactsegment_BAO_ContactSegment();
+    $op = "create";
     if (isset($params['id'])) {
       $contactSegment->id = $params['id'];
+      // pre hook if edit
+      $op = "edit";
+      self::storeValues($contactSegment, $preContactSegment);
+      CRM_Utils_Hook::pre($op, 'ContactSegment', $contactSegment->id, $preContactSegment);
       $contactSegment->find(true);
+    } else {
+      $contactSegment->is_active = 1;
     }
     $fields = self::fields();
     foreach ($params as $paramKey => $paramValue) {
@@ -60,8 +68,60 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
         $contactSegment->$paramKey = $paramValue;
       }
     }
+    if (!$contactSegment->start_date) {
+      $contactSegment->start_date = date("Ymd");
+    }
     $contactSegment->save();
+    // post hook
+    CRM_Utils_Hook::post($op, 'ContactSegment', $contactSegment->id, $contactSegment);
     self::storeValues($contactSegment, $result);
     return $result;
+  }
+
+  /**
+   * Method to delete contact segment with id
+   *
+   * @param int $contactSegmentId
+   * @return bool
+   * @throws Exception when no contactSegmentId passed
+   * @access public
+   * @static
+   */
+  public static function deleteWithId($contactSegmentId) {
+    if (empty($contactSegmentId)) {
+      throw new Exception('contactSegmentId can not be empty when attempting to delete one', 9005);
+    }
+    $preContactSegment = array();
+    $contactSegment = new CRM_Contactsegment_BAO_ContactSegment();
+    $contactSegment->id = $contactSegmentId;
+    self::storeValues($contactSegment, $preContactSegment);
+    CRM_Utils_Hook::pre('delete', 'ContactSegment', $contactSegment->id, $preContactSegment);
+    $contactSegment->delete();
+    return TRUE;
+  }
+  /**
+   * Implementation of hook civicrm_tabs to add a tab for contact segments
+   *
+   * @param array $tabs
+   * @param int $contactId
+   * @access public
+   * @static
+   */
+  public static function tabs(&$tabs, $contactId) {
+    $weight = 0;
+    foreach ($tabs as $tabId => $tab) {
+      if ($tab['id'] == 'group') {
+        $weight = $tab['weight']--;
+      }
+    }
+    $count = civicrm_api3('ContactSegment', 'Getcount', array('contact_id' => $contactId, 'is_active' => 1));
+    $segmentSetting = civicrm_api3('SegmentSetting', 'Getsingle', array());
+    $title = $segmentSetting['parent_label']." and ".$segmentSetting['child_label'];
+    $tabs[] = array(
+      'id'    => 'contactSegments',
+      'url'       => CRM_Utils_System::url('civicrm/contactsegmentlist', 'snippet=1&cid='.$contactId),
+      'title'     => $title,
+      'weight'    => $weight,
+      'count'     => $count);
   }
 }

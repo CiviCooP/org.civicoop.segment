@@ -29,8 +29,7 @@ class CRM_Contactsegment_Form_SegmentSetting extends CRM_Core_Form {
    * @access public
    */
   function preProcess() {
-    $config = CRM_Contactsegment_Config::singleton();
-    $this->_segmentConfig = $config->getSegmentConfig();
+    $this->_segmentConfig = civicrm_api3('SegmentSetting', 'Getsingle', array());
     CRM_Utils_System::setTitle("Segment Settings");
   }
 
@@ -41,12 +40,9 @@ class CRM_Contactsegment_Form_SegmentSetting extends CRM_Core_Form {
    */
   function postProcess() {
     $formValues = $this->exportValues();
-    $this->_segmentConfig['parent']['label'] = $formValues['parent_label'];
-    $this->_segmentConfig['parent']['roles'] = $formValues['parent_roles'];
-    $this->_segmentConfig['child']['label'] = $formValues['child_label'];
-    $this->_segmentConfig['child']['roles'] = $formValues['child_roles'];
-    $config = CRM_Contactsegment_Config::singleton();
-    $config->saveSegmentConfig($this->_segmentConfig);
+    $this->_segmentConfig = civicrm_api3('SegmentSetting', 'create', $formValues);
+    $session = CRM_Core_Session::singleton();
+    $session->setStatus("Segment Settings Saved", "Saved", "success");
     parent::postProcess();
     }
 
@@ -58,10 +54,10 @@ class CRM_Contactsegment_Form_SegmentSetting extends CRM_Core_Form {
    */
   function setDefaultValues() {
     $defaults = array();
-    $defaults['parent_label'] = $this->_segmentConfig['parent']['label'];
-    $defaults['parent_roles'] = $this->_segmentConfig['parent']['roles'];
-    $defaults['child_label'] = $this->_segmentConfig['child']['label'];
-    $defaults['child_roles'] = $this->_segmentConfig['child']['roles'];
+    $defaults['parent_label'] = $this->_segmentConfig['parent_label'];
+    $defaults['parent_roles'] = $this->_segmentConfig['parent_roles'];
+    $defaults['child_label'] = $this->_segmentConfig['child_label'];
+    $defaults['child_roles'] = $this->_segmentConfig['child_roles'];
     return $defaults;
   }
 
@@ -71,7 +67,7 @@ class CRM_Contactsegment_Form_SegmentSetting extends CRM_Core_Form {
    * @access protected
    */
   protected function addFormElements() {
-    $roleList = $this->getRoleList();
+    $roleList = CRM_Contactsegment_Utils::getRoleList();
     $this->add('text', 'parent_label', ts('Label'), array('size' => 128), true);
     $this->add('text', 'child_label', ts('Label'), array('size' => 128), true);
 
@@ -87,26 +83,6 @@ class CRM_Contactsegment_Form_SegmentSetting extends CRM_Core_Form {
     $this->addButtons(array(
       array('type' => 'next', 'name' => ts('Save'), 'isDefault' => true,),
       array('type' => 'cancel', 'name' => ts('Cancel'))));
-  }
-
-  /**
-   * Method to get select list of possible roles
-   *
-   * @access protected
-   * @return array
-   */
-  protected function getRoleList() {
-    $roleList = array();
-    $config = CRM_Contactsegment_Config::singleton();
-    $optionValueParams = array(
-      'option_group_id' => $config->getRoleOptionGroup('id'),
-      'is_active' => 1
-    );
-    $roles = civicrm_api3('OptionValue', 'Get', $optionValueParams);
-    foreach ($roles['values'] as $optionValueId => $optionValue) {
-      $roleList[$optionValue['value']] = $optionValue['label'];
-    }
-    return $roleList;
   }
 }
 

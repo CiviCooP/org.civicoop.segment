@@ -37,6 +37,7 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
     $this->_parentLabel = $segmentSetting['parent_label'];
     $this->_childLabel = $segmentSetting['child_label'];
   }
+
   /**
    * Overridden parent method to initiate form
    *
@@ -193,12 +194,7 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
    * @return array
    */
   protected function getParentList() {
-    $parentList = array();
-    $parentList[0] = "- select -";
-    $parents = civicrm_api3('Segment', 'Get', array('parent_id' => 'null'));
-    foreach ($parents['values'] as $parentId => $parent) {
-      $parentList[$parentId] = $parent['label'];
-    }
+    $parentList = array("- select -") + CRM_Contactsegment_Utils::getParentList();
     asort($parentList);
     return $parentList;
   }

@@ -74,7 +74,7 @@ class CRM_Contactsegment_Config {
         'is_reserved' => $resourcesArray['is_reserved']);
       $currentOptionGroup = CRM_Contactsegment_Utils::createOptionGroup($createOptionGroupParams);
       if ($currentOptionGroup == FALSE) {
-        throw new Exception("Could not create a new option group with name civicoop_contact_segment nor find an existing one");
+        throw new Exception("Could not create a new option group with name civicoop_contact_segment nor find an existing one", 9001);
       }
     }
     $optionValues = array();
@@ -104,7 +104,7 @@ class CRM_Contactsegment_Config {
       $jsonFile = $this->_resourcesPath.$fileName;
       if (!file_exists($jsonFile)) {
         throw new Exception("Could not load ".$fileName." required for extension org.civicoop.contactsegment,
-        contact your system administrator");
+        contact your system administrator", 9002);
       }
       $jsonData = file_get_contents($jsonFile);
       $return = json_decode($jsonData, true);

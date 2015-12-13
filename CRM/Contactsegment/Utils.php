@@ -158,4 +158,51 @@ class CRM_Contactsegment_Utils {
     }
     return $name;
   }
+
+  public static function getRoleLabel($roleValue) {
+    $config = CRM_Contactsegment_Config::singleton();
+    $params = array(
+      'option_group_id' => $config->getRoleOptionGroup('id'),
+      'value' => $roleValue,
+      'return' => 'label'
+    );
+    return civicrm_api3('OptionValue', 'Getvalue', $params);
+  }
+
+  /**
+   * Method to get list of possible roles for a segment
+   *
+   * @return array
+   * @throws CiviCRM_API3_Exception
+   *
+   */
+  public static function getRoleList() {
+    $roleList = array();
+    $config = CRM_Contactsegment_Config::singleton();
+    $optionValueParams = array(
+      'option_group_id' => $config->getRoleOptionGroup('id'),
+      'is_active' => 1
+    );
+    $roles = civicrm_api3('OptionValue', 'Get', $optionValueParams);
+    foreach ($roles['values'] as $optionValueId => $optionValue) {
+      $roleList[$optionValue['value']] = $optionValue['label'];
+    }
+    return $roleList;
+  }
+
+  /**
+   * Method to get list of segment parents
+   *
+   * @return array
+   * @throws CiviCRM_API3_Exception
+   */
+  public static function getParentList() {
+    $parentList = array();
+    $parents = civicrm_api3('Segment', 'Get', array('parent_id' => 'null'));
+    foreach ($parents['values'] as $parentId => $parent) {
+      $parentList[$parentId] = $parent['label'];
+    }
+    asort($parentList);
+    return $parentList;
+  }
 }

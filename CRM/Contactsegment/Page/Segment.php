@@ -44,7 +44,7 @@ class CRM_Contactsegment_Page_Segment extends CRM_Core_Page {
         $row['parent'] = "";
       } else {
         $row['type'] = $this->_segmentSetting['child_label'];
-        $row['parent'] = CRM_Contactsegment_BAO_Segment::getSegmentLabelWithId($daoSegments->parent_id);
+        $row['parent'] = civicrm_api3('Segment', 'Getvalue', array('id' => $daoSegments->parent_id, 'return' => 'label'));
       }
       $row['actions'] = $this->setRowActions($daoSegments);
       $displaySegments[$daoSegments->id] = $row;

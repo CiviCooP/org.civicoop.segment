@@ -19,8 +19,15 @@
     <access_arguments>access CiviCRM</access_arguments>
   </item>
   <item>
-    <path>civicrm/testeh</path>
-    <page_callback>CRM_Contactsegment_Form_TestEh</page_callback>
-    <title>TestEh</title>
+    <path>civicrm/contactsegmentlist</path>
+    <page_callback>CRM_Contactsegment_Page_ContactSegment</page_callback>
+    <title>ContactSegment</title>
     <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/contactsegment</path>
+    <page_callback>CRM_Contactsegment_Form_ContactSegment</page_callback>
+    <title>ContactSegment</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>

@@ -2,12 +2,17 @@
     "parent": {
         "label": "Sector",
         "roles": [
+            "Sector Coordinator",
+            "Recruitment Team Member",
+            "Country",
+            "Customer",
             "Expert"
         ]
     },
     "child": {
         "label": "Area of Expertise",
         "roles": [
+            "Customer",
             "Expert"
         ]
     }

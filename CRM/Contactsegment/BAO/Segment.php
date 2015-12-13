@@ -49,13 +49,20 @@ class CRM_Contactsegment_BAO_Segment extends CRM_Contactsegment_DAO_Segment {
    */
   public static function add($params) {
     $result = array();
+    $preSegment = array();
     if (empty($params)) {
-      throw new Exception('Params can not be empty when adding or updating a segment');
+      throw new Exception('Params can not be empty when adding or updating a segment', 9003);
     }
     $segment = new CRM_Contactsegment_BAO_Segment();
     if (isset($params['id'])) {
       $segment->id = $params['id'];
+      // pre hook if edit
+      $op = "edit";
+      self::storeValues($segment, $preSegment);
+      CRM_Utils_Hook::pre($op, 'Segment', $segment->id, $preSegment);
       $segment->find(true);
+    } else {
+      $op = "create";
     }
     $fields = self::fields();
     foreach ($params as $paramKey => $paramValue) {
@@ -67,6 +74,8 @@ class CRM_Contactsegment_BAO_Segment extends CRM_Contactsegment_DAO_Segment {
       $segment->name = CRM_Contactsegment_Utils::generateNameFromLabel($segment->label);
     }
     $segment->save();
+    // post hook
+    CRM_Utils_Hook::post($op, 'Segment', $segment->id, $segment);
     self::storeValues($segment, $result);
     return $result;
   }
@@ -81,96 +90,16 @@ class CRM_Contactsegment_BAO_Segment extends CRM_Contactsegment_DAO_Segment {
    * @static
    */
   public static function deleteById($segmentId) {
+    $preSegment = array();
     if (empty($segmentId)) {
-      throw new Exception('segmentId can not be empty when attempting to delete one');
+      throw new Exception('segmentId can not be empty when attempting to delete one', 9004);
     }
     $segment = new CRM_Contactsegment_BAO_Segment();
     $segment->id = $segmentId;
+    self::storeValues($segment, $preSegment);
+    CRM_Utils_Hook::pre('delete', 'Segment', $segment->id, $preSegment);
     $segment->delete();
     return TRUE;
-  }
-
-  /**
-   * Method to get the label of a segment
-   *
-   * @param int $segmentId
-   * @return string
-   * @access public
-   * @static
-   */
-  public static function getSegmentLabelWithId($segmentId) {
-    if (empty($segmentId)) {
-      return "";
-    }
-    $segment = new CRM_Contactsegment_BAO_Segment();
-    $segment->id = $segmentId;
-    if ($segment->find(true)) {
-      return $segment->label;
-    } else {
-      return "";
-    }
-  }
-
-  /**
-   * Method to get the parent of a segment
-   *
-   * @param int $segmentId
-   * @return string
-   * @access public
-   * @static
-   */
-  public static function getSegmentParentIdWithId($segmentId) {
-    if (empty($segmentId)) {
-      return FALSE;
-    }
-    $segment = new CRM_Contactsegment_BAO_Segment();
-    $segment->id = $segmentId;
-    if ($segment->find(true)) {
-      return $segment->parent_id;
-    } else {
-      return FALSE;
-    }
-  }
-
-  /**
-   * Method to get single segment with id
-   *
-   * @param int $segmentId
-   * @return array
-   * @access public
-   * @static
-   */
-  public static function getSingleSegmentWIthId($segmentId) {
-    $result = array();
-    if (!empty($segmentId)) {
-      $segment = new CRM_Contactsegment_BAO_Segment();
-      $segment->id = $segmentId;
-      if ($segment->find(true)) {
-        self::storeValues($segment, $result);
-      }
-    }
-    return $result;
-  }
-
-  /**
-   * Method to get only parent segments
-   *
-   * @return array
-   * @access public
-   * @static
-   */
-  public static function getParentSegments() {
-    $result = array();
-    $segment = new CRM_Contactsegment_BAO_Segment();
-    $segment->find();
-    while ($segment->fetch()) {
-      if (!$segment->parent_id) {
-        $row = array();
-        self::storeValues($segment, $row);
-        $result[$row['id']] = $row;
-      }
-    }
-    return $result;
   }
 }
 

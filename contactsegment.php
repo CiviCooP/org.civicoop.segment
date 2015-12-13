@@ -1,6 +1,15 @@
 <?php
 require_once 'contactsegment.civix.php';
-
+/**
+ * Implements hook_civicrm_buildForm().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
+ */
+function contactsegment_civicrm_buildForm($formName, &$form) {
+  if ($formName == 'CRM_Contactsegment_Form_ContactSegment') {
+    CRM_Core_Resources::singleton()->addScriptFile('org.civicoop.contactsegment', 'contactsegment.js');
+  }
+}
 /**
  * Implements hook_civicrm_config().
  *
@@ -131,6 +140,7 @@ function contactsegment_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  * to add a contact segment menu item to the Administer/Customize Data and Screens menu
  *
  * @param array $params
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
  */
 function contactsegment_civicrm_navigationMenu( &$params ) {
   $maxKey = CRM_Contactsegment_Utils::getMaxMenuKey($params);
@@ -175,4 +185,16 @@ function contactsegment_civicrm_navigationMenu( &$params ) {
             'navID'      => 2,
             'active'     => 1
           ))));
+}
+
+/**
+ * Implementation of hook civicrm_tabs
+ * to add a contact segment tab to the contact summary
+ *
+ * @param array $tabs
+ * @param int $contactID
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_tabs
+ */
+function contactsegment_civicrm_tabs(&$tabs, $contactID) {
+  $tabs[] = CRM_Contactsegment_BAO_ContactSegment::tabs($tabs, $contactID);
 }
