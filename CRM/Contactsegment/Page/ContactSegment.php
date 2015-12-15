@@ -68,7 +68,7 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
       $displaySegment['start_date'] = $contactSegment['start_date'];
       $displaySegment['end_date'] = $contactSegment['end_date'];
       $displaySegment['role'] = CRM_Contactsegment_Utils::getRoleLabel($contactSegment['role_value']);
-      $displaySegment['actions'] = $this->buildRowActions($contactSegment['id']);
+      $displaySegment['actions'] = $this->buildRowActions($contactSegment);
       if ($contactSegment['is_active'] = 1) {
         $activeContactSegments[$contactSegment['id']] = $displaySegment;
       } else {
@@ -80,16 +80,18 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
   /**
    * Function to set the row action urls and links for each row
    *
-   * @param int $contactSegmentId
+   * @param array $contactSegment
    * @return array $pageActions
    * @access private
    */
-  protected function buildRowActions($contactSegmentId) {
+  protected function buildRowActions($contactSegment) {
     $pageActions = array();
-    $editUrl = CRM_Utils_System::url('civicrm/contactsegment', 'action=update&csid='.$contactSegmentId, true);
+    $editUrl = CRM_Utils_System::url('civicrm/contactsegment', 'reset=1&action=update&cid='.$this->_contactId.'&csid='.$contactSegment['id'], true);
     $pageActions[] = '<a class="action-item" title="Edit" href="'.$editUrl.'">Edit</a>';
-    $deleteUrl = CRM_Utils_System::url('civicrm/contactsegment', 'action=delete&csid='.$contactSegmentId, true);
-    $pageActions[] = '<a class="action-item" title="Delete" href="'.$deleteUrl.'">Delete</a>';
+    $endUrl = CRM_Utils_System::url('civicrm/contactsegment', 'reset=1&action=close'.$this->_contactId.'&csid='.$contactSegment['id'], true);
+    if ($contactSegment['is_active'] == 1) {
+      $pageActions[] = '<a class="action-item" title="Close" href="' . $endUrl . '">End</a>';
+    }
     return $pageActions;
   }
 

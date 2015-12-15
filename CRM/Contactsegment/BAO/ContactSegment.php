@@ -60,7 +60,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
       CRM_Utils_Hook::pre($op, 'ContactSegment', $contactSegment->id, $preContactSegment);
       $contactSegment->find(true);
     } else {
-      $contactSegment->is_active = 1;
+      $params['is_active'] = 1;
     }
     $fields = self::fields();
     foreach ($params as $paramKey => $paramValue) {
@@ -71,6 +71,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
     if (!$contactSegment->start_date) {
       $contactSegment->start_date = date("Ymd");
     }
+    $contactSegment->processEndDate($params);
     $contactSegment->save();
     // post hook
     CRM_Utils_Hook::post($op, 'ContactSegment', $contactSegment->id, $contactSegment);
@@ -79,26 +80,24 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
   }
 
   /**
-   * Method to delete contact segment with id
+   * Method to process end date and set is active accordingly
    *
-   * @param int $contactSegmentId
-   * @return bool
-   * @throws Exception when no contactSegmentId passed
-   * @access public
-   * @static
+   * @param array $params
+   * $access private
    */
-  public static function deleteWithId($contactSegmentId) {
-    if (empty($contactSegmentId)) {
-      throw new Exception('contactSegmentId can not be empty when attempting to delete one', 9005);
+  private function processEndDate($params) {
+    if (!$params['end_date']) {
+      $this->end_date = '';
+      $this->is_active = 1;
+    } else {
+      $endDate = new DateTime($this->end_date);
+      $nowDate = new DateTime();
+      if ($endDate <= $nowDate) {
+        $this->is_active = 0;
+      }
     }
-    $preContactSegment = array();
-    $contactSegment = new CRM_Contactsegment_BAO_ContactSegment();
-    $contactSegment->id = $contactSegmentId;
-    self::storeValues($contactSegment, $preContactSegment);
-    CRM_Utils_Hook::pre('delete', 'ContactSegment', $contactSegment->id, $preContactSegment);
-    $contactSegment->delete();
-    return TRUE;
   }
+
   /**
    * Implementation of hook civicrm_tabs to add a tab for contact segments
    *

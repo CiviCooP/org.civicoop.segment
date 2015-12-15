@@ -1,6 +1,8 @@
 <?php
 require_once 'CRM/Core/Form.php';
 
+// TODO: validate against available roles per segment
+
 /**
  * Form controller class
  *
@@ -10,6 +12,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
 
   protected $_contactId = NULL;
   protected $_contactSegmentId = NULL;
+  protected $_parentSegmentId = NULL;
   protected $_parentLabel = NULL;
   protected $_childLabel = NULL;
   protected $_contactSegment = array();
@@ -17,6 +20,13 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
   function buildQuickForm() {
     $this->addFormElements();
     parent::buildQuickForm();
+  }
+
+  /**
+   * Overridden parent method to set validation rules
+   */
+  public function addRules() {
+    $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateRole'));
   }
 
   /**
@@ -39,28 +49,17 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     $this->_contactSegmentId = CRM_Utils_Request::retrieve('csid', 'Integer');
     $this->_contactId = CRM_Utils_Request::retrieve('cid', 'Integer');
     $this->getSegmentLabels();
-    if ($this->_action != CRM_Core_Action::ADD && $this->_contactSegmentId) {
+    if ($this->_action == CRM_Core_Action::CLOSE) {
+      $this->closeContactSegmentAndReturn();
+    }
+    $actionLabel = "Add";
+    if ($this->_action == CRM_Core_Action::UPDATE && $this->_contactSegmentId) {
       $this->_contactSegment = civicrm_api3('ContactSegment', 'Getsingle', array('id' => $this->_contactSegmentId));
+      $this->_parentSegmentId = civicrm_api3('Segment', 'Getvalue',
+        array('id' => $this->_contactSegment['segment_id'], 'return' => 'parent_id'));
+      $actionLabel = "Edit";
     }
-    if ($this->_action == CRM_Core_Action::DELETE) {
-      $this->deleteContactSegmentAndReturn();
-    }
-    switch ($this->_action) {
-      case CRM_Core_Action::ADD:
-        $actionLabel = "Add";
-        $headerLabel = $this->_parentLabel . " or " . $this->_childLabel;
-        break;
-      case CRM_Core_Action::UPDATE:
-        $actionLabel = "Edit";
-        $headerLabel = civicrm_api3('Segment', 'Getvalue',
-          array('id' => $this->_contactSegment['segment_id'], 'return' => 'label'));
-        break;
-      case CRM_Core_Action::VIEW:
-        $actionLabel = "View";
-        $headerLabel = civicrm_api3('Segment', 'Getvalue',
-          array('id' => $this->_contactSegment['segment_id'], 'return' => 'label'));
-        break;
-    }
+    $headerLabel = $this->_parentLabel . " or " . $this->_childLabel;
     CRM_Utils_System::setTitle($actionLabel." ".$headerLabel);
     $this->assign('actionLabel', $actionLabel);
     $this->assign('headerLabel', $headerLabel);
@@ -72,15 +71,13 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    * @access public
    */
   function postProcess() {
-    $values = $this->exportValues();
-    if (!$values['contact_id']) {
-      $this->_contactId = $values['contact_id'];
+    $this->_contactSegmentId = $this->_submitValues['contact_segment_id'];
+    if ($this->_submitValues['contact_id']) {
+      $this->_contactId = $this->_submitValues['contact_id'];
     }
-    if (!$values['contact_segment_id']) {
-      $this->_contactSegmentId = $values['contact_segment_id'];
-    }
+    $this->_contactSegmentId = $this->_submitValues['contact_segment_id'];
     if ($this->_action != CRM_Core_Action::VIEW) {
-      $this->saveContactSegment($values);
+      $this->saveContactSegment($this->_submitValues);
     }
     parent::postProcess();
   }
@@ -97,24 +94,39 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     $defaults['contact_segment_id'] = $this->_contactSegmentId;
     if ($this->_action == CRM_Core_Action::ADD) {
       list($defaults['start_date']) = CRM_Utils_Date::setDateDefaults(date('d-m-Y'));
+    } else {
+      $defaults['contact_segment_role'] = $this->_contactSegment['role_value'];
+      if ($this->_parentSegmentId) {
+        $defaults['segment_parent'] = $this->_parentSegmentId;
+        $defaults['segment_child'] = $this->_contactSegment['segment_id'];
+      } else {
+        $defaults['segment_parent'] = $this->_contactSegment['segment_id'];
+      }
+      if ($this->_contactSegment['start_date']) {
+        list($defaults['start_date']) = CRM_Utils_Date::setDateDefaults($this->_contactSegment['start_date']);
+      }
+      if ($this->_contactSegment['end_date']) {
+        list($defaults['end_date']) = CRM_Utils_Date::setDateDefaults($this->_contactSegment['end_date']);
+      }
     }
     return $defaults;
   }
 
   /**
-   * Function to add form elements
+   * Method to add form elements
    *
    * @access protected
    */
   protected function addFormElements() {
     $roleList = CRM_Contactsegment_Utils::getRoleList();
     $parentList = CRM_Contactsegment_Utils::getParentList();
+    $childList = array("- select -") + CRM_Contactsegment_Utils::getChildList($this->_parentSegmentId);
     $this->add('hidden', 'contact_id');
     $this->add('hidden', 'contact_segment_id');
     $this->add('select', 'contact_segment_role', ts('Role'), $roleList, true);
     $this->add('select', 'segment_parent', ts($this->_parentLabel), $parentList, true);
-    $this->add('select', 'segment_child', ts($this->_childLabel), array());
-    $this->addDate('start_date', ts('Start Date'), false);
+    $this->add('select', 'segment_child', ts($this->_childLabel), $childList);
+    $this->addDate('start_date', ts('Start Date'), true);
     $this->addDate('end_date', ts('End Date'), false);
     $this->addButtons(array(
       array('type' => 'next', 'name' => ts('Save'), 'isDefault' => true,),
@@ -122,7 +134,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
   }
 
   /**
-   * Function to save the contact segment
+   * Method to save the contact segment
    *
    * @param $formValues
    * @access protected
@@ -146,32 +158,64 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     if ($formValues['end_date']) {
       $params['end_date'] = $formValues['end_date'];
     }
-    $this->_contactSegment = civicrm_api3('ContactSegment', 'Create', $params);
+    $contactSegment = civicrm_api3('ContactSegment', 'Create', $params);
+    $this->_contactSegment = $contactSegment['values'];
     $session = CRM_Core_Session::singleton();
     $session->setStatus("Contact linked to ".$segmentLabel." as ".$formValues['contact_segment_role'],
       "Contact Linked to ".$segmentLabel, "success");
   }
 
   /**
-   * Method to delete contact segment
+   * Method to end contact segment and return
    *
    */
-  protected function deleteContactSegmentAndReturn() {
-    // TODO contact segment can only be deleted if contact is not active in one of his roles on a case
-    // TODO function to check this perhaps before delete option is made available
+  protected function closeContactSegmentAndReturn()
+  {
+    $this->_contactSegment['is_active'] = 0;
+    $this->_contactSegment['end_date'] = date('Ymd');
+    civicrm_api3('ContactSegment', 'Create', $this->_contactSegment);
+    $session = CRM_Core_Session::singleton();
     $displayName = civicrm_api3('Contact', 'Getvalue',
       array('id' => $this->_contactSegment['contact_id'], 'return' => 'display_name'));
     $segment = civicrm_api3('Segment', 'Getsingle', array('id' => $this->_contactSegment['segment_id']));
     if (!$segment['parent_id']) {
-      $statusMessage = $this->_parentLabel." removed from contact ".$displayName;
-      $statusTitle = $this->_parentLabel." removed";
+      $statusMessage = $this->_parentLabel . " " . $segment['label'] . " with role " . $this->_contactSegment['role_value']
+        . " ended for contact " . $displayName;
+      $statusTitle = $this->_parentLabel . " ended";
     } else {
-      $statusMessage = $this->_childLabel." removed from contact ".$displayName;
-      $statusTitle = $this->_childLabel." removed";
+      $statusMessage = $this->_childLabel . " " . $segment['label'] . " with role " . $this->_contactSegment['role_value']
+        . " ended for contact " . $displayName;
+      $statusTitle = $this->_childLabel . " ended";
     }
-    civicrm_api3('ContactSegment', 'Delete', array('id' => $this->_contactSegmentId));
-    $session = CRM_Core_Session::singleton();
     $session->setStatus($statusMessage, $statusTitle, "success");
     CRM_Utils_System::redirect($session->readUserContext());
+  }
+
+  /**
+   * Method to validate if role is allowed for segment
+   *
+   * @param array $fields
+   * @return array $errors or TRUE
+   * @access public
+   * @static
+   */
+  static function validateRole($fields) {
+    $errors = array();
+    $segmentSettings = civicrm_api3('SegmentSetting', 'Getsingle', array());
+    if ($fields['contact_segment_role']) {
+      if ($fields['segment_child']) {
+        if (!in_array($fields['contact_segment_role'], $segmentSettings['child_roles'])) {
+          $errors['contact_segment_role'] = ts('Role not allowed for '.$segmentSettings['child_label']);
+          return $errors;
+        }
+      }
+      if ($fields['segment_parent']) {
+        if (!in_array($fields['contact_segment_role'], $segmentSettings['parent_roles'])) {
+          $errors['contact_segment_role'] = ts('Role not allowed for '.$segmentSettings['parent_label']);
+          return $errors;
+        }
+      }
+    }
+    return TRUE;
   }
 }

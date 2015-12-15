@@ -46,10 +46,6 @@
 {* show or hide parent select list *}
 {literal}
   <script type="text/javascript">
-    cj(document).ready(function() {
-      var parentId = cj("#segment_parent").val();
-      getSegmentChildren(parentId);
-    });
     cj("#segment_parent").change(function() {
       var parentId = cj("#segment_parent").val();
       getSegmentChildren(parentId);

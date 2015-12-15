@@ -205,4 +205,25 @@ class CRM_Contactsegment_Utils {
     asort($parentList);
     return $parentList;
   }
+
+  /**
+   * Method to get list of segment children with parent id
+   *
+   * @param int $parentId
+   * @return array
+   * @throws CiviCRM_API3_Exception
+   */
+  public static function getChildList($parentId = NULL) {
+    if (!$parentId) {
+      $query = 'SELECT id FROM civicrm_segment WHERE parent_id IS NULL ORDER BY label ASC LIMIT 1';
+      $parentId = CRM_Core_DAO::singleValueQuery($query);
+    }
+    $childList = array();
+    $children = civicrm_api3('Segment', 'Get', array('parent_id' => $parentId));
+    foreach ($children['values'] as $childId => $child) {
+      $childList[$childId] = $child['label'];
+    }
+    asort($childList);
+    return $childList;
+  }
 }
