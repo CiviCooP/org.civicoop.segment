@@ -23,13 +23,6 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
   }
 
   /**
-   * Overridden parent method to set validation rules
-   */
-  public function addRules() {
-    $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateRole'));
-  }
-
-  /**
    * Method to get the segment labels
    *
    * @access private
@@ -46,18 +39,18 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    * @access public
    */
   function preProcess() {
-    $this->_contactSegmentId = CRM_Utils_Request::retrieve('csid', 'Integer');
-    $this->_contactId = CRM_Utils_Request::retrieve('cid', 'Integer');
+    $this->getContactSegment();
     $this->getSegmentLabels();
-    if ($this->_action == CRM_Core_Action::CLOSE) {
-      $this->closeContactSegmentAndReturn();
-    }
-    $actionLabel = "Add";
-    if ($this->_action == CRM_Core_Action::UPDATE && $this->_contactSegmentId) {
-      $this->_contactSegment = civicrm_api3('ContactSegment', 'Getsingle', array('id' => $this->_contactSegmentId));
-      $this->_parentSegmentId = civicrm_api3('Segment', 'Getvalue',
-        array('id' => $this->_contactSegment['segment_id'], 'return' => 'parent_id'));
-      $actionLabel = "Edit";
+    switch ($this->_action) {
+      case CRM_Core_Action::ADD:
+        $actionLabel = "Add";
+        break;
+      case CRM_Core_Action::CLOSE:
+        $this->closeContactSegmentAndReturn();
+        break;
+      case CRM_Core_Action::UPDATE:
+        $actionLabel = "Edit";
+        break;
     }
     $headerLabel = $this->_parentLabel . " or " . $this->_childLabel;
     CRM_Utils_System::setTitle($actionLabel." ".$headerLabel);
@@ -120,7 +113,11 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
   protected function addFormElements() {
     $roleList = CRM_Contactsegment_Utils::getRoleList();
     $parentList = CRM_Contactsegment_Utils::getParentList();
-    $childList = array("- select -") + CRM_Contactsegment_Utils::getChildList($this->_parentSegmentId);
+    if ($this->_parentSegmentId) {
+      $childList = array("- select -") + CRM_Contactsegment_Utils::getChildList($this->_parentSegmentId);
+    } else {
+      $childList = array("- select -") + CRM_Contactsegment_Utils::getChildList($this->_contactSegment['segment_id']);
+    }
     $this->add('hidden', 'contact_id');
     $this->add('hidden', 'contact_segment_id');
     $this->add('select', 'contact_segment_role', ts('Role'), $roleList, true);
@@ -166,11 +163,17 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
   }
 
   /**
+   * Overridden parent method to set validation rules
+   */
+  public function addRules() {
+    $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateRole'));
+  }
+
+  /**
    * Method to end contact segment and return
    *
    */
-  protected function closeContactSegmentAndReturn()
-  {
+  protected function closeContactSegmentAndReturn() {
     $this->_contactSegment['is_active'] = 0;
     $this->_contactSegment['end_date'] = date('Ymd');
     civicrm_api3('ContactSegment', 'Create', $this->_contactSegment);
@@ -192,6 +195,24 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
   }
 
   /**
+   * Method to get the current contact segment data
+   *
+   * @access protected
+   */
+  protected function getContactSegment() {
+    if (empty($this->_submitValues)) {
+      $this->_contactSegmentId = CRM_Utils_Request::retrieve('csid', 'Integer');
+      $this->_contactId = CRM_Utils_Request::retrieve('cid', 'Integer');
+    } else {
+      $this->_contactSegmentId = $this->_submitValues['contact_segment_id'];
+      $this->_contactId = $this->_submitValues['contact_id'];
+    }
+    $this->_contactSegment = civicrm_api3('ContactSegment', 'Getsingle', array('id' => $this->_contactSegmentId));
+    $this->_parentSegmentId = civicrm_api3('Segment', 'Getvalue',
+      array('id' => $this->_contactSegment['segment_id'], 'return' => 'parent_id'));
+  }
+
+  /**
    * Method to validate if role is allowed for segment
    *
    * @param array $fields
@@ -206,12 +227,14 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       if ($fields['segment_child']) {
         if (!in_array($fields['contact_segment_role'], $segmentSettings['child_roles'])) {
           $errors['contact_segment_role'] = ts('Role not allowed for '.$segmentSettings['child_label']);
+          $errors['segment_child'] = ts('Role not allowed for '.$segmentSettings['child_label']);
           return $errors;
         }
       }
       if ($fields['segment_parent']) {
         if (!in_array($fields['contact_segment_role'], $segmentSettings['parent_roles'])) {
           $errors['contact_segment_role'] = ts('Role not allowed for '.$segmentSettings['parent_label']);
+          $errors['segment_parent'] = ts('Role not allowed for '.$segmentSettings['parent_label']);
           return $errors;
         }
       }
