@@ -49,8 +49,7 @@ class CRM_Contactsegment_Page_Segment extends CRM_Core_Page {
       $row['actions'] = $this->setRowActions($daoSegments);
       $displaySegments[$daoSegments->id] = $row;
     }
-    return $displaySegments;
-  }
+    return $displaySegments;  }
 
   /**
    * Function to set the row action urls and links for each row

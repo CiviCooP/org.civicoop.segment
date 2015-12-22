@@ -150,13 +150,20 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
     }
     $params['label'] = $formValues['segment_label'];
     $params['name'] = CRM_Contactsegment_Utils::generateNameFromLabel($params['label']);
-    switch ($formValues['segment_type']) {
-      case "parent":
+    if ($this->_action == CRM_Core_Action::ADD) {
+      $segmentType = key($formValues['segment_type_list']);
+    } else {
+      if ($formValues['segment_parent']) {
+        $segmentType = 1;
+      }
+    }
+    switch ($segmentType) {
+      case 0:
         $params['parent_id'] = NULL;
         $statusTitle = $this->_parentLabel." saved";
         $statusMessage = $this->_parentLabel." ".$params['label']." saved";
         break;
-      case "child":
+      case 1:
         $params['parent_id'] = $formValues['segment_parent'];
         $statusTitle = $this->_childLabel." saved";
         $statusMessage = $this->_childLabel." ".$this->_segment['label']." from "

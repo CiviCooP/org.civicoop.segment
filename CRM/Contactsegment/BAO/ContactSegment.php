@@ -123,4 +123,42 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
       'weight'    => $weight,
       'count'     => $count);
   }
+
+  /**
+   * Method to get a contact with a given role for a given segment on a specific date
+   * (assumption is that there is only 1 contact. If there are more, method will return the first one found)
+   *
+   * @param string $role
+   * @param int $segmentId
+   * @param date $testDate
+   * @return bool|array
+   * @access public
+   * @static
+   */
+  public static function getRoleContactActiveOnDate($role, $segmentId, $testDate) {
+    if (empty($role) || empty($segmentId) || empty($testDate)) {
+      return FALSE;
+    }
+    $testDate = new DateTime($testDate);
+    $config = CRM_Contactsegment_Config::singleton();
+    if (!in_array($role, $config->getRoleOptionGroup())) {
+      return FALSE;
+    }
+    $params = array('segment_id' => $segmentId, 'role_value' => $role);
+    $roleContactSegments = civicrm_api3('ContactSemgent', 'Get', $params);
+    foreach ($roleContactSegments['values'] as $contactSegment) {
+      $startDate = new DateTime($contactSegment['start_date']);
+      if ($testDate >= $startDate) {
+        if (!$contactSegment['end_date']) {
+          return $contactSegment['contact_id'];
+        } else {
+          $endDate = new DateTime($contactSegment['end_date']);
+          if ($endDate >= $testDate) {
+            return $contactSegment['contact_id'];
+          }
+        }
+      }
+    }
+    return FALSE;
+  }
 }

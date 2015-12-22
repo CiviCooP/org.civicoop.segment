@@ -39,7 +39,11 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    * @access public
    */
   function preProcess() {
-    $this->getContactSegment();
+    if ($this->_action != CRM_Core_Action::ADD) {
+      $this->getContactSegment();
+    } else {
+      $this->_contactId = CRM_Utils_Request::retrieve('cid', 'Integer');
+    }
     $this->getSegmentLabels();
     switch ($this->_action) {
       case CRM_Core_Action::ADD:

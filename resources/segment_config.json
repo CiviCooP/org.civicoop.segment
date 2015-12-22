@@ -6,14 +6,16 @@
             "Recruitment Team Member",
             "Country",
             "Customer",
-            "Expert"
+            "Expert",
+            "Other"
         ]
     },
     "child": {
         "label": "Area of Expertise",
         "roles": [
             "Customer",
-            "Expert"
+            "Expert",
+            "Other"
         ]
     }
 }

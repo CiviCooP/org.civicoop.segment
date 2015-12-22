@@ -20,6 +20,11 @@
       "label":"Country",
       "value":"Country"
     },
+    "other":{
+      "name":"other",
+      "label":"Other",
+      "value":"Other"
+    },
     "recruitment_team_member":{
       "name":"recruitment_team_member",
       "label":"Recruitment Team Member",
