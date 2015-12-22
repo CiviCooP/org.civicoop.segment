@@ -17,7 +17,7 @@
         {assign var="rowCount" value=$rowCount+1}
         <tr id="row{$rowCount}" class={$rowClass}>
           <td hidden="1">{$activeContactSegmentId}</td>
-          <td class="crm-segment-label">{$activeContactSegment.label}</td>
+          <td>{$activeContactSegment.label}</td>
           <td>{$activeContactSegment.type}</td>
           <td>{$activeContactSegment.role}</td>
           <td>{$activeContactSegment.start_date|crmDate}</td>

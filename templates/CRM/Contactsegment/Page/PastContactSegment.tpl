@@ -16,7 +16,7 @@
       {foreach from=$pastContactSegments key=pastContactSegmentId item=pastContactSegment}
         {assign var="rowCount" value=$rowCount+1}
         <tr id="row{$rowCount}" class={$rowClass}>
-          <td hidden="1">{$activeContactSegmentId}
+          <td hidden="1">{$pastContactSegmentId}
           <td>{$pastContactSegment.label}</td>
           <td>{$pastContactSegment.type}</td>
           <td>{$pastContactSegment.role}</td>
