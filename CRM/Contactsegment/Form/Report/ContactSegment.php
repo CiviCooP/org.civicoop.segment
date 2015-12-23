@@ -332,7 +332,7 @@ class CRM_Contactsegment_Form_Report_ContactSegment extends CRM_Report_Form {
     foreach ($rows as $rowNum => $row) {
 
       if (array_key_exists('civicrm_segment_parent_id', $row)) {
-        if (empty($row['civicrm_contact_segment_parent_id'])) {
+        if (empty($row['civicrm_segment_parent_id'])) {
           $rows[$rowNum]['civicrm_segment_type'] = $segmentSetting['parent_label'];
         } else {
           $rows[$rowNum]['civicrm_segment_type'] = $segmentSetting['child_label'];
