@@ -171,6 +171,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    */
   public function addRules() {
     $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateRole'));
+    $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateExists'));
   }
 
   /**
@@ -239,6 +240,42 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
         if (!in_array($fields['contact_segment_role'], $segmentSettings['parent_roles'])) {
           $errors['contact_segment_role'] = ts('Role not allowed for '.$segmentSettings['parent_label']);
           $errors['segment_parent'] = ts('Role not allowed for '.$segmentSettings['parent_label']);
+          return $errors;
+        }
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Method to validate if contact segment already exists
+   *
+   * @param array $fields
+   * @return array $errors or TRUE
+   * @access public
+   * @static
+   */
+  static function validateExists($fields) {
+    $errors = array();
+    $segmentSettings = civicrm_api3('SegmentSetting', 'Getsingle', array());
+    // only if empty contact_segment_id, meaning it is add action
+    if (empty($fields['contact_segment_id'])) {
+      if (!$fields['segment_child']) {
+        $countSegment = civicrm_api3('ContactSegment', 'Getcount', array(
+          'contact_id' => $fields['contact_id'],
+          'segment_id' => $fields['segment_parent']));
+        if ($countSegment > 0) {
+          $errors['segment_parent'] = ts('Contact is already linked to '.$segmentSettings['parent_label']
+            .', edit the existing link if required');
+          return $errors;
+        }
+      } else {
+        $countSegment = civicrm_api3('ContactSegment', 'Getcount', array(
+          'contact_id' => $fields['contact_id'],
+          'segment_id' => $fields['segment_child']));
+        if ($countSegment > 0) {
+          $errors['segment_child'] = ts('Contact is already linked to '.$segmentSettings['child_label']
+            .', edit the existing link if required');
           return $errors;
         }
       }
