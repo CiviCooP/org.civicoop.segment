@@ -76,7 +76,111 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
     // post hook
     CRM_Utils_Hook::post($op, 'ContactSegment', $contactSegment->id, $contactSegment);
     self::storeValues($contactSegment, $result);
+    // function to add or update parent if child
+    self::processParentChild($contactSegment);
     return $result;
+  }
+
+  /**
+   * Method to check if parent needs to be added or updated:
+   * - if child contact segment is added then 3 cases are possible:
+   *   - parent contact segment not there, has to be added
+   *   - parent contact segment there with end date before end date child, set end date to child end date and is_active
+   *   - parent contact segment there with later or same end date, do nothing
+   *
+   * @param $contactSegment
+   * @access private
+   * @static
+   */
+  private static function processParentChild($contactSegment) {
+    $segmentParent = civicrm_api3('Segment', 'Getvalue',
+      array('id' => $contactSegment->segment_id, 'return' => 'parent_id'));
+    if ($segmentParent) {
+      $countParentParams = array(
+        'contact_id' => $contactSegment->contact_id,
+        'role_value' => $contactSegment->role_value,
+        'segment_id' => $segmentParent);
+      $countParentContactSegment = civicrm_api3('ContactSegment', 'Getcount', $countParentParams);
+      if ($countParentContactSegment == 0) {
+        self::addParent($contactSegment, $segmentParent);
+      } else {
+        self::updateParent($contactSegment, $segmentParent);
+      }
+    } else {
+      self::updateChildren($contactSegment);
+    }
+  }
+
+  /**
+   * Method to set end date for child contact segments if end date is set for parent
+   *
+   * @param $contactSegment
+   * @access private
+   * @static
+   */
+  private static function updateChildren($contactSegment) {
+    $childrenSelect = 'SELECT id FROM civicrm_contact_segment
+      WHERE contact_id = %1 AND role_value = %2 AND segment_id IN(SELECT id FROM civicrm_segment WHERE parent_id = %3)';
+    $selectParams = array(
+      1 => array($contactSegment->contact_id, 'Integer'),
+      2 => array($contactSegment->role_value, 'String'),
+      3 => array($contactSegment->segment_id, 'Integer'));
+    $daoChildren = CRM_Core_DAO::executeQuery($childrenSelect, $selectParams);
+    while ($daoChildren->fetch()) {
+      $childUpdate = 'UPDATE civicrm_contact_segment SET end_date = %1, is_active = %2 WHERE id = %3';
+      $updateParams = array(
+        1 => array($contactSegment->end_date, 'String'),
+        2 => array($contactSegment->is_active, 'Integer'),
+        3 => array($daoChildren->id, 'Integer'));
+      CRM_Core_DAO::executeQuery($childUpdate, $updateParams);
+    }
+  }
+
+  /**
+   * Method to update parent contact segment if required
+   *
+   * @param $contactSegment
+   * @param $segmentParent
+   * @access private
+   * @static
+   */
+  private static function updateParent($contactSegment, $segmentParent) {
+    $parentContactSegment = civicrm_api3('ContactSegment', 'Getsingle',
+      array(
+        'contact_id' => $contactSegment->contact_id,
+        'segment_id' => $segmentParent,
+        'role_value' => $contactSegment->role_value));
+    if (!$contactSegment->end_date) {
+      $parentContactSegment['end_date'] = '';
+      $parentContactSegment['is_active'] = 1;
+    } else {
+      $childEndDate = new DateTime($contactSegment->end_date);
+      $parentEndDate = new DateTime($parentContactSegment['end_date']);
+      if ($parentEndDate < $childEndDate) {
+        $parentContactSegment['end_date'] = $childEndDate->format('Ymd');
+        $parentContactSegment['is_active'] = $contactSegment->is_active;
+      }
+    }
+    self::add($parentContactSegment);
+  }
+
+  /**
+   * Method to add parent contact segment if required
+   *
+   * @param $contactSegment
+   * @param $segmentParent
+   * @access private
+   * @static
+   */
+  private static function addParent($contactSegment, $segmentParent) {
+    $parentSegmentParams = array(
+      'contact_id' => $contactSegment->contact_id,
+      'segment_id' => $segmentParent,
+      'role_value' => $contactSegment->role_value,
+      'start_date' => $contactSegment->start_date,
+      'end_date' => $contactSegment->end_date,
+      'is_active' => $contactSegment->is_active);
+    self::add($parentSegmentParams);
   }
 
   /**

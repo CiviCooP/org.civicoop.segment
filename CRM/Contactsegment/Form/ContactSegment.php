@@ -172,6 +172,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
   public function addRules() {
     $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateRole'));
     $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateExists'));
+    $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateEndDate'));
   }
 
   /**
@@ -278,6 +279,32 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
             .', edit the existing link if required');
           return $errors;
         }
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Method to validate if end date is not earlier than or equal to start date
+   *
+   * @param array $fields
+   * @return array $errors or TRUE
+   * @access public
+   * @static
+   */
+  static function validateEndDate($fields) {
+    $errors = array();
+    if ($fields['end_date']) {
+      if ($fields['start_date']) {
+        $endDate = new DateTime($fields['end_date']);
+        $startDate = new DateTime($fields['start_date']);
+        if ($endDate <= $startDate) {
+          $errors['end_date'] = ts('End Date has to be later than Start Date');
+          return $errors;
+        }
+      } else {
+        $errors['end_date'] = ts('End Date has to be later than Start Date');
+        return $errors;
       }
     }
     return TRUE;
