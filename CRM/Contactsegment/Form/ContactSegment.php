@@ -120,7 +120,11 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     if ($this->_parentSegmentId) {
       $childList = array("- select -") + CRM_Contactsegment_Utils::getChildList($this->_parentSegmentId);
     } else {
-      $childList = array("- select -") + CRM_Contactsegment_Utils::getChildList($this->_contactSegment['segment_id']);
+      if (isset($this->_contactSegment['segment_id'])) {
+        $childList = array("- select -") + CRM_Contactsegment_Utils::getChildList($this->_contactSegment['segment_id']);
+      } else {
+        $childList = array("- select -");
+      }
     }
     $this->add('hidden', 'contact_id');
     $this->add('hidden', 'contact_segment_id');

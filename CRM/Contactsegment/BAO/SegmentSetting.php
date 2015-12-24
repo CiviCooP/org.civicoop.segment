@@ -29,10 +29,10 @@ class CRM_Contactsegment_BAO_SegmentSetting {
    * @return array
    */
   public function get($params) {
-    if (!$params['level']) {
-      $level = 'all';
-    } else {
+    if (isset($params['level']) || !empty($params['level'])) {
       $level = $params['level'];
+    } else {
+      $level = 'all';
     }
     switch ($level) {
       case 'parent':
