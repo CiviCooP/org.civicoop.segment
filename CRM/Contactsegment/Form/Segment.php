@@ -101,7 +101,7 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
   function setDefaultValues() {
     $defaults = array();
     $defaults['segment_id'] = $this->_segmentId;
-    if (!$this->_segment['parent_id']) {
+    if (!isset($this->_segment['parent_id']) || empty($this->_segment['parent_id'])) {
       $defaults['segment_type'] = 'parent';
     } else {
       $defaults['segment_type'] = 'child';
@@ -166,7 +166,7 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
       case 1:
         $params['parent_id'] = $formValues['segment_parent'];
         $statusTitle = $this->_childLabel." saved";
-        $statusMessage = $this->_childLabel." ".$this->_segment['label']." from "
+        $statusMessage = $this->_childLabel." ".$params['label']." from "
           .$this->_parentLabel." ".$this->getSegmentParentLabel($formValues['segment_parent'])." saved";
         break;
     }

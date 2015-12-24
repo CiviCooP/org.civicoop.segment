@@ -190,7 +190,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
    * $access private
    */
   private function processEndDate($params) {
-    if (!$params['end_date']) {
+    if (!isset($params['end_date']) || empty($params['end_date'])) {
       $this->end_date = '';
       $this->is_active = 1;
     } else {
