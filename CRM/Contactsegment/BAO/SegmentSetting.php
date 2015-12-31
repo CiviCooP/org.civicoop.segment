@@ -70,18 +70,12 @@ class CRM_Contactsegment_BAO_SegmentSetting {
         $this->_segmentSettingArray['parent']['label'] = $params['parent_label'];
       }
       if ($params['parent_roles']) {
-        if (!is_array($params['parent_roles'])) {
-          $params['parent_roles'] = array($params['parent_roles']);
-        }
         $this->_segmentSettingArray['parent']['roles'] = $params['parent_roles'];
       }
       if ($params['child_label']) {
         $this->_segmentSettingArray['child']['label'] = $params['child_label'];
       }
       if ($params['child_roles']) {
-        if (!is_array($params['child_roles'])) {
-          $params['child_roles'] = array($params['child_roles']);
-        }
         $this->_segmentSettingArray['child']['roles'] = $params['child_roles'];
       }
       $this->saveSegmentConfig();

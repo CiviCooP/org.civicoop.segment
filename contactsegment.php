@@ -164,7 +164,7 @@ function contactsegment_civicrm_navigationMenu( &$params ) {
           'attributes' => array (
             'label'      => ts('Contact Segment Settings'),
             'name'       => ts('Contact Segment Settings'),
-            'url'        => CRM_Utils_System::url('civicrm/segmentsetting', 'reset=1', true),
+            'url'        => CRM_Utils_System::url('civicrm/segmentsetting', 'reset=1&type=parent', true),
             'permission' => 'administer CiviCRM',
             'operator'   => NULL,
             'separator'  => NULL,

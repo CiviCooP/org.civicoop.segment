@@ -1,21 +1,44 @@
 {
     "parent": {
         "label": "Sector",
-        "roles": [
-            "Sector Coordinator",
-            "Recruitment Team Member",
-            "Country",
-            "Customer",
-            "Expert",
-            "Other"
-        ]
+        "roles": {
+            "sector_coordinator": {
+                "label": "Sector Coordinator",
+                "unique": "1"
+            },
+            "recruitment_team_member": {
+                "label": "Recruitment Team Member",
+                "unique": "0"
+            },
+            "country": {
+                "label": "Country",
+                "unique": "0"
+            },
+            "customer": {
+                "label": "Customer",
+                "unique": "0"
+            },
+            "other": {
+                "label": "Other",
+                "unique": "0"
+            },
+            "expert": {
+                "label": "Expert",
+                "unique": "0"
+            }
+        }
     },
     "child": {
         "label": "Area of Expertise",
-        "roles": [
-            "Customer",
-            "Expert",
-            "Other"
-        ]
+        "roles": {
+            "expert": {
+                "label": "Expert",
+                "unique": "0"
+            },
+            "other": {
+                "label": "Other",
+                "unique": "0"
+            }
+        }
     }
 }

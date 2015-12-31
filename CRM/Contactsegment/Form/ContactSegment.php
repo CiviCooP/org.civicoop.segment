@@ -175,7 +175,8 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    * Overridden parent method to set validation rules
    */
   public function addRules() {
-    $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateRole'));
+    $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateRoleAllowed'));
+    $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateRoleUnique'));
     $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateExists'));
     $this->addFormRule(array('CRM_Contactsegment_Form_ContactSegment', 'validateEndDate'));
   }
@@ -186,7 +187,14 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    */
   protected function closeContactSegmentAndReturn() {
     $this->_contactSegment['is_active'] = 0;
-    $this->_contactSegment['end_date'] = date('Ymd');
+    $startDate = new DateTime($this->_contactSegment['start_date']);
+    $nowDate = new DateTime();
+    if ($startDate > $nowDate) {
+      $endDate = $startDate->modify('+1 day');
+      $this->_contactSegment['end_date'] = $endDate->format('d-m-Y');
+    } else {
+      $this->_contactSegment['end_date'] = $nowDate->format('d-m-Y');
+    }
     civicrm_api3('ContactSegment', 'Create', $this->_contactSegment);
     $session = CRM_Core_Session::singleton();
     $displayName = civicrm_api3('Contact', 'Getvalue',
@@ -231,19 +239,20 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    * @access public
    * @static
    */
-  static function validateRole($fields) {
+  static function validateRoleAllowed($fields) {
     $errors = array();
     $segmentSettings = civicrm_api3('SegmentSetting', 'Getsingle', array());
+    $roleName = CRM_Contactsegment_Utils::getRoleNameWithLabel($fields['contact_segment_role']);
     if ($fields['contact_segment_role']) {
       if ($fields['segment_child']) {
-        if (!in_array($fields['contact_segment_role'], $segmentSettings['child_roles'])) {
+        if (!isset($segmentSettings['child_roles'][$roleName])) {
           $errors['contact_segment_role'] = ts('Role not allowed for '.$segmentSettings['child_label']);
           $errors['segment_child'] = ts('Role not allowed for '.$segmentSettings['child_label']);
           return $errors;
         }
       }
       if ($fields['segment_parent']) {
-        if (!in_array($fields['contact_segment_role'], $segmentSettings['parent_roles'])) {
+        if (!isset($segmentSettings['parent_roles'][$roleName])) {
           $errors['contact_segment_role'] = ts('Role not allowed for '.$segmentSettings['parent_label']);
           $errors['segment_parent'] = ts('Role not allowed for '.$segmentSettings['parent_label']);
           return $errors;
@@ -269,6 +278,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       if (!$fields['segment_child']) {
         $countSegment = civicrm_api3('ContactSegment', 'Getcount', array(
           'contact_id' => $fields['contact_id'],
+          'role_value' => $fields['contact_segment_role'],
           'segment_id' => $fields['segment_parent']));
         if ($countSegment > 0) {
           $errors['segment_parent'] = ts('Contact is already linked to '.$segmentSettings['parent_label']
@@ -278,6 +288,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       } else {
         $countSegment = civicrm_api3('ContactSegment', 'Getcount', array(
           'contact_id' => $fields['contact_id'],
+          'role_value' => $fields['contact_segment_role'],
           'segment_id' => $fields['segment_child']));
         if ($countSegment > 0) {
           $errors['segment_child'] = ts('Contact is already linked to '.$segmentSettings['child_label']
@@ -310,6 +321,41 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       } else {
         $errors['end_date'] = ts('End Date has to be later than Start Date');
         return $errors;
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Method to validate if role is unique and already active
+   *
+   * @param array $fields
+   * @return array $errors or TRUE
+   * @access public
+   * @static
+   */
+  static function validateRoleUnique($fields) {
+    $errors = array();
+    $checkParams = array(
+      'role' => $fields['contact_segment_role'],
+      'contact_id' => $fields['contact_id'],
+      'start_date' => $fields['start_date'],
+      'end_date' => $fields['end_date']);
+    if (!empty($fields['segment_child'])) {
+      if (CRM_Contactsegment_Utils::isSegmentRoleUnique($fields['contact_segment_role'], 'child') == TRUE) {
+        $checkParams['segment_id'] = $fields['segment_child'];
+        if (CRM_Contactsegment_Utils::activeCurrentContactSegmentForRole($checkParams) == TRUE) {
+          $errors['segment_child'] = ts('Only 1 active role allowed, there is already an active '.$fields['contact_segment_role']);
+          return $errors;
+        }
+      }
+    } else {
+      if (CRM_Contactsegment_Utils::isSegmentRoleUnique($fields['contact_segment_role'], 'parent') == TRUE) {
+        $checkParams['segment_id'] = $fields['segment_parent'];
+        if (CRM_Contactsegment_Utils::activeCurrentContactSegmentForRole($checkParams) == TRUE) {
+          $errors['segment_parent'] = ts('Only 1 active role allowed, there is already an active '.$fields['contact_segment_role']);
+          return $errors;
+        }
       }
     }
     return TRUE;
