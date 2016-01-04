@@ -35,13 +35,7 @@ class CRM_Contactsegment_Form_SegmentSetting extends CRM_Core_Form {
    */
   function postProcess() {
     $this->saveSegmentSetting($this->exportValues());
-    $session = CRM_Core_Session::singleton();
-    $config = CRM_Core_Config::singleton();
-    $session->setStatus("Segment Settings Saved", "Saved", "success");
-    if ($session->readUserContext() == $config->userFrameworkBaseURL) {
-      $session->pushUserContext(CRM_Utils_System::url('civicrm', 'reset=1', true));
-    }
-    parent::postProcess();
+    CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/segmentrole', 'reset=1', true));
   }
 
   /**
@@ -99,8 +93,8 @@ class CRM_Contactsegment_Form_SegmentSetting extends CRM_Core_Form {
    */
   protected function addFormElements() {
     $roleList = CRM_Contactsegment_Utils::getRoleList();
-    $this->add('text', 'parent_label', ts('Label'), array('size' => 128), true);
-    $this->add('text', 'child_label', ts('Label'), array('size' => 128), true);
+    $this->add('text', 'parent_label', ts('Label'), array('size' => 80), true);
+    $this->add('text', 'child_label', ts('Label'), array('size' => 80), true);
     $parentRoleSelect = $this->addElement('advmultiselect', 'parent_roles', ts('Roles'), $roleList,
       array('size' => 5, 'style' => 'width:280px', 'class' => 'advmultselect'),TRUE);
     $parentRoleSelect->setButtonAttributes('add', array('value' => ts('Use for parent')." >>"));

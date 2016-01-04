@@ -30,4 +30,10 @@
     <title>ContactSegment</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/segmentrole</path>
+    <page_callback>CRM_Contactsegment_Form_SegmentRole</page_callback>
+    <title>SegmentRole</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>
