@@ -344,7 +344,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     if (!empty($fields['segment_child'])) {
       if (CRM_Contactsegment_Utils::isSegmentRoleUnique($fields['contact_segment_role'], 'child') == TRUE) {
         $checkParams['segment_id'] = $fields['segment_child'];
-        if (CRM_Contactsegment_Utils::activeCurrentContactSegmentForRole($checkParams) == TRUE) {
+        if (CRM_Contactsegment_Utils::activeCurrentContactSegmentForRole($checkParams) != FALSE) {
           $errors['segment_child'] = ts('Only 1 active role allowed, there is already an active '.$fields['contact_segment_role']);
           return $errors;
         }
@@ -352,7 +352,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     } else {
       if (CRM_Contactsegment_Utils::isSegmentRoleUnique($fields['contact_segment_role'], 'parent') == TRUE) {
         $checkParams['segment_id'] = $fields['segment_parent'];
-        if (CRM_Contactsegment_Utils::activeCurrentContactSegmentForRole($checkParams) == TRUE) {
+        if (CRM_Contactsegment_Utils::activeCurrentContactSegmentForRole($checkParams) != FALSE) {
           $errors['segment_parent'] = ts('Only 1 active role allowed, there is already an active '.$fields['contact_segment_role']);
           return $errors;
         }

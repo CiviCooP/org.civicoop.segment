@@ -296,8 +296,10 @@ class CRM_Contactsegment_Utils {
    * Method to check if there is an active contact segment for role in period that is
    * not contact_id in params (only used for unique contact segments)
    *
+   * Returns false when there is no active contact segment for role. Otherwise return the id of the current contact segment
+   *
    * @param $params
-   * @return bool
+   * @return false|int
    */
   public static function activeCurrentContactSegmentForRole($params) {
     $mandatoryParams = array('role', 'segment_id', 'start_date', 'contact_id');
@@ -308,8 +310,8 @@ class CRM_Contactsegment_Utils {
     }
     $startDate = new DateTime($params['start_date']);
     $apiParams = array(
-      'role_value' => $params['role'],
-      'segment_id' => $params['segment_id']
+        'role_value' => $params['role'],
+        'segment_id' => $params['segment_id']
     );
     try {
       $existingContactSegments = civicrm_api3('ContactSegment', 'Get', $apiParams);
@@ -318,11 +320,11 @@ class CRM_Contactsegment_Utils {
         if ($existingContactSegment['contact_id'] != $params['contact_id']) {
           // return TRUE if start_date of params is before end_date of found contact segment
           if (!isset($existingContactSegment['end_date'])) {
-            return TRUE;
+            return $existingContactSegment['id'];
           } else {
             $endDate = new DateTime($existingContactSegment['end_date']);
             if ($startDate <= $endDate) {
-              return TRUE;
+              return $existingContactSegment['id'];
             }
           }
         }
