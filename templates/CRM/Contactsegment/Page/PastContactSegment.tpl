@@ -20,8 +20,8 @@
           <td>{$pastContactSegment.label}</td>
           <td>{$pastContactSegment.type}</td>
           <td>{$pastContactSegment.role}</td>
-          <td>{$pastContactSegment.start_date}</td>
-          <td>{$pastContactSegment.end_date}</td>
+          <td>{$pastContactSegment.start_date|crmDate}</td>
+          <td>{$pastContactSegment.end_date|crmDate}</td>
           <td>
             <span>
               {foreach from=$pastContactSegment.actions item=actionLink}

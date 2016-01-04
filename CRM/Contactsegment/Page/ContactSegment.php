@@ -29,67 +29,83 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
    * @access private
    */
   private function getContactSegments() {
-    $contactSegmentParams = array();
-    $activeContactSegments = array();
-    $pastContactSegments = array();
-    if ($this->_contactId) {
-      $contactSegmentParams = array('contact_id' => $this->_contactId);
-    }
-    try {
-      $fetchedContactSegment = civicrm_api3('ContactSegment', 'Get', $contactSegmentParams);
-      foreach ($fetchedContactSegment['values'] as $contactSegmentId => $contactSegment) {
-        $this->buildContactSegmentRow($contactSegment, $activeContactSegments, $pastContactSegments);
+    $this->assign('activeContactSegments', $this->getParentsWithChildren(1));
+    $this->assign('pastContactSegments', $this->getParentsWithChildren(0));
+  }
+
+  /**
+   * Method to get parents and children for each parent
+   *
+   * @param int $isActive
+   * @return array $rows
+   * @access private
+   */
+  private function getParentsWithChildren($isActive) {
+    $rows = array();
+    $queryParents = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date, is_active, label, parent_id
+      FROM civicrm_contact_segment cs JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
+      WHERE contact_id = %1 AND parent_id IS NULL AND is_active = %2";
+    $paramsParents = array(
+      1 => array($this->_contactId, 'Integer'),
+      2 => array($isActive, 'Integer'));
+
+    $daoParents = CRM_Core_DAO::executeQuery($queryParents, $paramsParents);
+    while ($daoParents->fetch()) {
+      $rows[$daoParents->contact_segment_id] = $this->buildContactSegmentRow($daoParents);
+      $queryChildren = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date, is_active, label, parent_id
+      FROM civicrm_contact_segment cs JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
+      WHERE contact_id = %1 AND parent_id = %2 AND role_value = %3 AND is_active = %4";
+      $paramsChildren = array(
+        1 => array($this->_contactId, 'Integer'),
+        2 => array($daoParents->segment_id, 'Integer'),
+        3 => array($daoParents->role_value, 'String'),
+        4 => array($isActive, 'Integer'));
+      $daoChildren = CRM_Core_DAO::executeQuery($queryChildren, $paramsChildren);
+      while ($daoChildren->fetch()) {
+        $rows[$daoChildren->contact_segment_id] = $this->buildContactSegmentRow($daoChildren);
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
-    $this->assign('activeContactSegments', $activeContactSegments);
-    $this->assign('pastContactSegments', $pastContactSegments);
+    }
+    return $rows;
   }
 
   /**
    * Method to build a contact segment row, active or past
    *
-   * @param array $contactSegment
-   * @param array $activeContactSegments
-   * @param array $pastContactSegments
+   * @param object $dao
+   * @return array $row
    * @access private
    */
-  private function buildContactSegmentRow($contactSegment, &$activeContactSegments, &$pastContactSegments) {
-    if (!empty($contactSegment)) {
-      $displaySegment = array();
-      $segment = civicrm_api3('Segment', 'Getsingle', array('id' => $contactSegment['segment_id']));
-      if ($segment) {
-        $displaySegment['label'] = $segment['label'];
-        if (!$segment['parent_id']) {
-          $displaySegment['type'] = $this->_segmentSetting['parent_label'];
-        } else {
-          $displaySegment['type'] = $this->_segmentSetting['child_label'];
-        }
-      }
-      $displaySegment['start_date'] = $contactSegment['start_date'];
-      $displaySegment['end_date'] = $contactSegment['end_date'];
-      $displaySegment['role'] = CRM_Contactsegment_Utils::getRoleLabel($contactSegment['role_value']);
-      $displaySegment['actions'] = $this->buildRowActions($contactSegment);
-      if ($contactSegment['is_active'] == 1) {
-        $activeContactSegments[$contactSegment['id']] = $displaySegment;
-      } else {
-        $pastContactSegments[$contactSegment['id']] = $displaySegment;
-      }
+  private function buildContactSegmentRow($dao) {
+    $row = array();
+    if (empty($dao->parent_id)) {
+      $row['type'] = $this->_segmentSetting['parent_label'];
+      $row['label'] = $dao->label;
+    } else {
+      $row['type'] = $this->_segmentSetting['child_label'];
+      $row['label'] = ' * '.$dao->label;
     }
+    $row['start_date'] = $dao->start_date;
+    if (isset($dao->end_date) && !empty($dao->end_date)) {
+      $row['end_date'] = $dao->end_date;
+    }
+    $row['role'] = CRM_Contactsegment_Utils::getRoleLabel($dao->role_value);
+    $row['actions'] = $this->buildRowActions($dao);
+    return $row;
   }
 
   /**
    * Function to set the row action urls and links for each row
    *
-   * @param array $contactSegment
+   * @param object $dao
    * @return array $pageActions
    * @access private
    */
-  protected function buildRowActions($contactSegment) {
+  protected function buildRowActions($dao) {
     $pageActions = array();
-    $editUrl = CRM_Utils_System::url('civicrm/contactsegment', 'reset=1&action=update&cid='.$this->_contactId.'&csid='.$contactSegment['id'], true);
+    $editUrl = CRM_Utils_System::url('civicrm/contactsegment', 'reset=1&action=update&cid='.$this->_contactId.'&csid='.$dao->contact_segment_id, true);
     $pageActions[] = '<a class="action-item" title="Edit" href="'.$editUrl.'">Edit</a>';
-    $endUrl = CRM_Utils_System::url('civicrm/contactsegment', 'reset=1&action=close&cid='.$this->_contactId.'&csid='.$contactSegment['id'], true);
-    if ($contactSegment['is_active'] == 1) {
+    $endUrl = CRM_Utils_System::url('civicrm/contactsegment', 'reset=1&action=close&cid='.$this->_contactId.'&csid='.$dao->contact_segment_id, true);
+    if ($dao->is_active == 1) {
       $pageActions[] = '<a class="action-item" title="Close" href="' . $endUrl . '">End</a>';
     }
     return $pageActions;

@@ -21,7 +21,7 @@
           <td>{$activeContactSegment.type}</td>
           <td>{$activeContactSegment.role}</td>
           <td>{$activeContactSegment.start_date|crmDate}</td>
-          <td>{$activeContactSegment.end_date}</td>
+          <td>{$activeContactSegment.end_date|crmDate}</td>
           <td>
             <span>
               {foreach from=$activeContactSegment.actions item=actionLink}
