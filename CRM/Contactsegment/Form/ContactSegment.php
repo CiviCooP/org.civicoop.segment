@@ -186,14 +186,14 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    *
    */
   protected function closeContactSegmentAndReturn() {
-    $this->_contactSegment['is_active'] = 0;
     $startDate = new DateTime($this->_contactSegment['start_date']);
     $nowDate = new DateTime();
     if ($startDate > $nowDate) {
       $endDate = $startDate->modify('+1 day');
-      $this->_contactSegment['end_date'] = $endDate->format('d-m-Y');
+      $this->_contactSegment['end_date'] = $endDate->format('Y-m-d');
     } else {
-      $this->_contactSegment['end_date'] = $nowDate->format('d-m-Y');
+      $this->_contactSegment['end_date'] = $nowDate->format('Y-m-d');
+      $this->_contactSegment['is_active'] = 0;
     }
     civicrm_api3('ContactSegment', 'Create', $this->_contactSegment);
     $session = CRM_Core_Session::singleton();
