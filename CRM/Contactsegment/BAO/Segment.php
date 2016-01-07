@@ -101,5 +101,26 @@ class CRM_Contactsegment_BAO_Segment extends CRM_Contactsegment_DAO_Segment {
     $segment->delete();
     return TRUE;
   }
+
+  /**
+   * Method to build the table civicrm_segment_tree. This table holds double data but holds the id's in parent/child
+   * sequence so the page can be built quickly
+   *
+   * @access public
+   * @static
+   */
+  public static function buildSegmentTree() {
+    CRM_Core_DAO::executeQuery("TRUNCATE TABLE civicrm_segment_tree");
+    $daoParent = CRM_Core_DAO::executeQuery("SELECT id FROM civicrm_segment WHERE parent_id IS NULL ORDER BY label");
+    while ($daoParent->fetch()) {
+      CRM_Core_DAO::executeQuery("INSERT INTO civicrm_segment_tree SET id = %1", array(1 => array($daoParent->id, 'Integer')));
+      $qryChild = "SELECT id FROM civicrm_segment WHERE parent_id = %1 ORDER BY label";
+      $paramsChild = array(1 => array($daoParent->id, 'Integer'));
+      $daoChild = CRM_Core_DAO::executeQuery($qryChild, $paramsChild);
+      while ($daoChild->fetch()) {
+        CRM_Core_DAO::executeQuery("INSERT INTO civicrm_segment_tree SET id = %1", array(1 => array($daoChild->id, 'Integer')));
+      }
+    }
+  }
 }
 

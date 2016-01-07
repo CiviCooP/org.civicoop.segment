@@ -33,9 +33,10 @@ class CRM_Contactsegment_Page_Segment extends CRM_Core_Page {
   protected function getSegments() {
     $displaySegments = array();
     list($offset, $limit) = $this->_pager->getOffsetAndRowCount();
+    $query = "SELECT sgmnt.* FROM civicrm_segment_tree tree JOIN civicrm_segment sgmnt ON tree.id = sgmnt.id LIMIT %1, %2";
     $queryParams[1] = array($offset, 'Integer');
     $queryParams[2] = array($limit, 'Integer');
-    $daoSegments = CRM_Core_DAO::executeQuery("SELECT * FROM civicrm_segment LIMIT %1, %2", $queryParams);
+    $daoSegments = CRM_Core_DAO::executeQuery($query, $queryParams);
     while ($daoSegments->fetch()) {
       $row = array();
       $row['label'] = $daoSegments->label;

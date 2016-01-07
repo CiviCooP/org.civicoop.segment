@@ -198,3 +198,37 @@ function contactsegment_civicrm_navigationMenu( &$params ) {
 function contactsegment_civicrm_tabs(&$tabs, $contactID) {
   $tabs[] = CRM_Contactsegment_BAO_ContactSegment::tabs($tabs, $contactID);
 }
+
+/**
+ * Implementation of hook civicrm_post
+ * to rebuild segment tree when segment is created or updated
+ *
+ * @param string $op
+ * @param string $objectName
+ * @param int $objectId
+ * @param object $objectRef
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_post
+ */
+function contactsegment_civicrm_post($op, $objectName, $objectId, &$objectRef) {
+  if ($objectName == "Segment") {
+    if ($op == "create" || $op == "edit") {
+      CRM_Contactsegment_BAO_Segment::buildSegmentTree();
+    }
+  }
+}
+
+/**
+ * Implementation of hook civicrm_pre
+ * to rebuild segment tree when segment is deleted
+ *
+ * @param string $op
+ * @param string $objectName
+ * @param int $objectId
+ * @param array $params
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_pre
+ */
+function contactsegment_civicrm_pre($op, $objectName, $objectId, &$params) {
+  if ($objectName == "Segment" && $op == "delete") {
+    CRM_Contactsegment_BAO_Segment::buildSegmentTree();
+  }
+}

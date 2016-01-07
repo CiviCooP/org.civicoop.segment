@@ -7,6 +7,9 @@ CREATE TABLE IF NOT EXISTS civicrm_segment (
   UNIQUE INDEX id_UNIQUE (id ASC))
   ENGINE = InnoDB;
 
+CREATE TABLE IF NOT EXISTS civicrm_segment_tree (
+  id INT UNSIGNED NOT NULL);
+
 CREATE TABLE IF NOT EXISTS civicrm_contact_segment (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   contact_id INT UNSIGNED DEFAULT NULL,
