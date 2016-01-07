@@ -41,6 +41,7 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
    * @access private
    */
   private function getParentsWithChildren($isActive) {
+    $selectedChildren = array();
     $rows = array();
     $queryParents = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date, is_active, label, parent_id
       FROM civicrm_contact_segment cs JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
@@ -52,9 +53,10 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
     $daoParents = CRM_Core_DAO::executeQuery($queryParents, $paramsParents);
     while ($daoParents->fetch()) {
       $rows[$daoParents->contact_segment_id] = $this->buildContactSegmentRow($daoParents);
-      $queryChildren = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date, is_active, label, parent_id
-      FROM civicrm_contact_segment cs JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
-      WHERE contact_id = %1 AND parent_id = %2 AND role_value = %3 AND is_active = %4";
+      $queryChildren = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date,
+        is_active, label, parent_id FROM civicrm_contact_segment cs
+        JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
+        WHERE contact_id = %1 AND parent_id = %2 AND role_value = %3 AND is_active = %4";
       $paramsChildren = array(
         1 => array($this->_contactId, 'Integer'),
         2 => array($daoParents->segment_id, 'Integer'),
@@ -63,9 +65,44 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
       $daoChildren = CRM_Core_DAO::executeQuery($queryChildren, $paramsChildren);
       while ($daoChildren->fetch()) {
         $rows[$daoChildren->contact_segment_id] = $this->buildContactSegmentRow($daoChildren);
+        $selectedChildren[] = $daoChildren->contact_segment_id;
       }
     }
+    // for past there could be 'floating' children
+    if ($isActive == 0) {
+      $this->addFloatingChildren($selectedChildren);
+    }
     return $rows;
+  }
+  /**
+   * Method to add floating children
+   *
+   * @param array $selectedChildren
+   * @access private
+   */
+  private function addFloatingChildren($selectedChildren) {
+    $floatingRows = array();
+    $query = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date,
+      is_active, label, parent_id FROM civicrm_contact_segment cs
+      JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
+      WHERE contact_id = %1 AND is_active = %2 AND parent_id IS NOT NULL";
+    $params = array(
+      1 => array($this->_contactId, 'Integer'),
+      2 => array(0, 'Integer')
+    );
+    if (!empty($selectedChildren)) {
+      $count = 2;
+      foreach ($selectedChildren as $selectedChild) {
+        $count++;
+        $query .= " AND cs.id != %".$count;
+        $params[$count] = array($selectedChild, 'Integer');
+      }
+    }
+    $dao = CRM_Core_DAO::executeQuery($query, $params);
+    while ($dao->fetch()) {
+      $floatingRows[$dao->contact_segment_id] = $this->buildContactSegmentRow($dao);
+    }
+    $this->assign('floatingContactSegments', $floatingRows);
   }
 
   /**
@@ -82,7 +119,7 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
       $row['label'] = $dao->label;
     } else {
       $row['type'] = $this->_segmentSetting['child_label'];
-      $row['label'] = ' * '.$dao->label;
+      $row['label'] = ' - '.$dao->label;
     }
     $row['start_date'] = $dao->start_date;
     if (isset($dao->end_date) && !empty($dao->end_date)) {
