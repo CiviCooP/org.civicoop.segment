@@ -152,7 +152,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
         'role_value' => $contactSegment->role_value));
 
     if (!$contactSegment->end_date) {
-      $query = 'UPDATE contact_segment SET is_active = %1 AND end_date = %2 WHERE id = %3';
+      $query = 'UPDATE civicrm_contact_segment SET is_active = %1 AND end_date = %2 WHERE id = %3';
       $params = array(
         1 => array(1, 'Integer'),
         2 => array('', 'String'),
@@ -162,7 +162,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
       $childEndDate = new DateTime($contactSegment->end_date);
       $parentEndDate = new DateTime($parentContactSegment['end_date']);
       if ($parentEndDate < $childEndDate) {
-        $query = 'UPDATE contact_segment SET is_active = %1 AND end_date = %2 WHERE id = %3';
+        $query = 'UPDATE civicrm_contact_segment SET is_active = %1 AND end_date = %2 WHERE id = %3';
         $params = array(
           1 => array($contactSegment->is_active, 'Integer'),
           2 => array($childEndDate->format('Ymd'), 'Date'),
