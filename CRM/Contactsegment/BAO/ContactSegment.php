@@ -128,8 +128,13 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
     $daoChildren = CRM_Core_DAO::executeQuery($childrenSelect, $selectParams);
     while ($daoChildren->fetch()) {
       $childUpdate = 'UPDATE civicrm_contact_segment SET end_date = %1, is_active = %2 WHERE id = %3';
+      if (!$contactSegment->end_date) {
+        $endDate = NULL;
+      } else {
+        $endDate = $contactSegment->end_date;
+      }
       $updateParams = array(
-        1 => array($contactSegment->end_date, 'String'),
+        1 => array($endDate, 'Date'),
         2 => array($contactSegment->is_active, 'Integer'),
         3 => array($daoChildren->id, 'Integer'));
       CRM_Core_DAO::executeQuery($childUpdate, $updateParams);
@@ -150,24 +155,34 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
         'contact_id' => $contactSegment->contact_id,
         'segment_id' => $segmentParent,
         'role_value' => $contactSegment->role_value));
-
     if (!$contactSegment->end_date) {
-      $query = 'UPDATE civicrm_contact_segment SET is_active = %1 AND end_date = %2 WHERE id = %3';
+      $query = 'UPDATE civicrm_contact_segment SET is_active = %1, end_date = %2 WHERE id = %3';
       $params = array(
         1 => array(1, 'Integer'),
-        2 => array('', 'String'),
+        2 => array(NULL, 'Date'),
         3 => array($parentContactSegment['id'], 'Integer'));
-        CRM_Core_DAO::executeQuery($query, $params);
+
+      CRM_Core_DAO::executeQuery($query, $params);
+      $daoParent = CRM_Core_DAO::executeQuery('SELECT * FROM civicrm_contact_segment WHERE id = %1',
+        array(1 => array($parentContactSegment['id'], 'Integer')));
+      if ($daoParent->fetch()) {
+        self::updateChildren($daoParent);
+      }
     } else {
       $childEndDate = new DateTime($contactSegment->end_date);
       $parentEndDate = new DateTime($parentContactSegment['end_date']);
       if ($parentEndDate < $childEndDate) {
-        $query = 'UPDATE civicrm_contact_segment SET is_active = %1 AND end_date = %2 WHERE id = %3';
+        $query = 'UPDATE civicrm_contact_segment SET is_active = %1, end_date = %2 WHERE id = %3';
         $params = array(
           1 => array($contactSegment->is_active, 'Integer'),
           2 => array($childEndDate->format('Ymd'), 'Date'),
           3 => array($parentContactSegment['id'], 'Integer'));
         CRM_Core_DAO::executeQuery($query, $params);
+        $daoParent = CRM_Core_DAO::executeQuery('SELECT * FROM civicrm_contact_segment WHERE id = %1',
+          array(1 => array($parentContactSegment['id'], 'Integer')));
+        if ($daoParent->fetch()) {
+          self::updateChildren($daoParent);
+        }
       }
     }
   }
@@ -206,6 +221,8 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
       $nowDate = new DateTime();
       if ($endDate <= $nowDate) {
         $this->is_active = 0;
+      } else {
+        //$this->is_active = 1;
       }
     }
   }
