@@ -102,7 +102,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       if ($this->_contactSegment['start_date']) {
         list($defaults['start_date']) = CRM_Utils_Date::setDateDefaults($this->_contactSegment['start_date']);
       }
-      if ($this->_contactSegment['end_date']) {
+      if (isset($this->_contactSegment['end_date']) && !empty($this->_contactSegment['end_date'])) {
         list($defaults['end_date']) = CRM_Utils_Date::setDateDefaults($this->_contactSegment['end_date']);
       }
     }
