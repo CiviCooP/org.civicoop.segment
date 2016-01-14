@@ -131,7 +131,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
       if (!$contactSegment->end_date) {
         $endDate = NULL;
       } else {
-        $endDate = $contactSegment->end_date;
+        $endDate = date('Ymd', strtotime($contactSegment->end_date));
       }
       $updateParams = array(
         1 => array($endDate, 'Date'),
