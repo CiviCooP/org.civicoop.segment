@@ -270,20 +270,26 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
     }
     $testDate = new DateTime($testDate);
     $config = CRM_Contactsegment_Config::singleton();
-    if (!in_array($role, $config->getRoleOptionGroup())) {
-      return FALSE;
+    $roleOptionGroup = $config->getRoleOptionGroup();
+    $roleFound = FALSE;
+    foreach ($roleOptionGroup['values'] as $roleOptionValue) {
+      if ($roleOptionValue['label'] == $role) {
+        $roleFound = TRUE;
+      }
     }
-    $params = array('segment_id' => $segmentId, 'role_value' => $role);
-    $roleContactSegments = civicrm_api3('ContactSemgent', 'Get', $params);
-    foreach ($roleContactSegments['values'] as $contactSegment) {
-      $startDate = new DateTime($contactSegment['start_date']);
-      if ($testDate >= $startDate) {
-        if (!$contactSegment['end_date']) {
-          return $contactSegment['contact_id'];
-        } else {
-          $endDate = new DateTime($contactSegment['end_date']);
-          if ($endDate >= $testDate) {
+    if ($roleFound) {
+      $params = array('segment_id' => $segmentId, 'role_value' => $role);
+      $roleContactSegments = civicrm_api3('ContactSegment', 'Get', $params);
+      foreach ($roleContactSegments['values'] as $contactSegment) {
+        $startDate = new DateTime($contactSegment['start_date']);
+        if ($testDate >= $startDate) {
+          if (!$contactSegment['end_date']) {
             return $contactSegment['contact_id'];
+          } else {
+            $endDate = new DateTime($contactSegment['end_date']);
+            if ($endDate >= $testDate) {
+              return $contactSegment['contact_id'];
+            }
           }
         }
       }
