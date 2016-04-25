@@ -45,6 +45,10 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       $exportValues = CRM_Utils_Request::exportValues();
       if (isset($exportValues['cid'])) {
         $this->_contactId = $exportValues['cid'];
+      } else {
+        if (isset($exportValues['contact_id'])) {
+          $this->_contactId = $exportValues['contact_id'];
+        }
       }
     }
     $this->getSegmentLabels();
