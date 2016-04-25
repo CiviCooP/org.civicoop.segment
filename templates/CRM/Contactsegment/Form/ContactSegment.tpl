@@ -1,5 +1,5 @@
 {* HEADER *}
-<h3>{$actionLabel}&nbsp;{$headerLabel} for Contact</h3>
+<h3>{$actionLabel}&nbsp;{$headerLabel} for {$contactName}</h3>
 
 <div class="crm-block crm-form-block">
   <div class="crm-submit-buttons">

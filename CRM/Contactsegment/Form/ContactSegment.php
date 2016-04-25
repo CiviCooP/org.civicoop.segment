@@ -42,7 +42,10 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     if ($this->_action != CRM_Core_Action::ADD) {
       $this->getContactSegment();
     } else {
-      $this->_contactId = CRM_Utils_Request::retrieve('cid', 'Integer');
+      $exportValues = CRM_Utils_Request::exportValues();
+      if (isset($exportValues['cid'])) {
+        $this->_contactId = $exportValues['cid'];
+      }
     }
     $this->getSegmentLabels();
     switch ($this->_action) {
@@ -60,6 +63,9 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     CRM_Utils_System::setTitle($actionLabel." ".$headerLabel);
     $this->assign('actionLabel', $actionLabel);
     $this->assign('headerLabel', $headerLabel);
+    $contactName = (string) civicrm_api3('Contact', 'Getvalue',
+      array('id' => $this->_contactId, 'return' => 'display_name'));
+    $this->assign('contactName', $contactName);
   }
 
   /**
