@@ -168,5 +168,8 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
     CRM_Utils_System::setTitle(ts($this->_segmentSetting['parent_label']. "s and " . $this->_segmentSetting['child_label']
       . "s for ".$displayName));
     $this->assign('addUrl', $addUrl);
+    $session = CRM_Core_Session::singleton();
+    $contactSegmentUrl= CRM_Utils_System::url('civicrm/contact/view', 'action=browse&selectedChild=contactSegments', true);
+    $session->pushUserContext($contactSegmentUrl);
   }
 }
