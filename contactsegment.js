@@ -21,7 +21,7 @@ function getSegmentChildren(parentId) {
       });
     },
     error: function() {
-      CRM.alert("Could not find any segment data for id" + parentId + ", contact your system administrator", "No Segment", "error");
+      CRM.alert("Could not find any segment data for id " + parentId + ", contact your system administrator", "No Segment", "error");
     }
   });
 }

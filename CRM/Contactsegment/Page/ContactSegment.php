@@ -45,7 +45,7 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
     $rows = array();
     $queryParents = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date, is_active, label, parent_id
       FROM civicrm_contact_segment cs JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
-      WHERE contact_id = %1 AND parent_id IS NULL AND is_active = %2 ORDER BY role_value";
+      WHERE contact_id = %1 AND parent_id IS NULL AND is_active = %2 ORDER BY role_value DESC";
     $paramsParents = array(
       1 => array($this->_contactId, 'Integer'),
       2 => array($isActive, 'Integer'));
@@ -56,7 +56,7 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
       $queryChildren = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date,
         is_active, label, parent_id FROM civicrm_contact_segment cs
         JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
-        WHERE contact_id = %1 AND parent_id = %2 AND role_value = %3 AND is_active = %4 ORDER BY role_value";
+        WHERE contact_id = %1 AND parent_id = %2 AND role_value = %3 AND is_active = %4 ORDER BY role_value DESC";
       $paramsChildren = array(
         1 => array($this->_contactId, 'Integer'),
         2 => array($daoParents->segment_id, 'Integer'),

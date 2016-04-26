@@ -52,6 +52,8 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
     }
     $contactSegment = new CRM_Contactsegment_BAO_ContactSegment();
     $op = "create";
+    // check if there is already a record for combination of role_value, contact_id and segment. If so, use that id to edit
+    $contactSegment->checkAlreadyExists($params);
     if (isset($params['id'])) {
       $contactSegment->id = $params['id'];
       // pre hook if edit
@@ -79,6 +81,19 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
     // function to add or update parent if child
     self::processParentChild($contactSegment);
     return $result;
+  }
+
+  /**
+   * Method to use the id if there is already a contactsegment for the values that are about to be created
+   * @param $params
+   */
+  private function checkAlreadyExists(&$params) {
+    $result = self::getValues($params);
+    if (!empty($result)) {
+      foreach ($result as $id => $values) {
+        $params['id'] = $id;
+      }
+    }
   }
 
   /**
@@ -221,8 +236,6 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
       $nowDate = new DateTime();
       if ($endDate <= $nowDate) {
         $this->is_active = 0;
-      } else {
-        //$this->is_active = 1;
       }
     }
   }
