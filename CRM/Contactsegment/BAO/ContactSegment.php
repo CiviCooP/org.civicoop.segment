@@ -296,7 +296,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
       foreach ($roleContactSegments['values'] as $contactSegment) {
         $startDate = new DateTime($contactSegment['start_date']);
         if ($testDate >= $startDate) {
-          if (!$contactSegment['end_date']) {
+          if (empty($contactSegment['end_date'])) {
             return $contactSegment['contact_id'];
           } else {
             $endDate = new DateTime($contactSegment['end_date']);
