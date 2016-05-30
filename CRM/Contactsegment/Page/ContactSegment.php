@@ -169,7 +169,7 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
       . "s for ".$displayName));
     $this->assign('addUrl', $addUrl);
     $session = CRM_Core_Session::singleton();
-    $contactSegmentUrl= CRM_Utils_System::url('civicrm/contact/view', 'action=browse&selectedChild=contactSegments', true);
+    $contactSegmentUrl= CRM_Utils_System::url('civicrm/contact/view', 'action=browse&selectedChild=contactSegments&reset=1&cid='.$this->_contactId, true);
     $session->pushUserContext($contactSegmentUrl);
   }
 }

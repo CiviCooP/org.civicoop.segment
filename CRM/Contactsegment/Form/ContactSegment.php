@@ -86,6 +86,9 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     if ($this->_action != CRM_Core_Action::VIEW) {
       $this->saveContactSegment($this->_submitValues);
     }
+
+    $contactSegmentUrl= CRM_Utils_System::url('civicrm/contact/view', 'action=browse&selectedChild=contactSegments&reset=1&cid='.$this->_contactId, true);
+    CRM_Utils_System::redirect($contactSegmentUrl);
     parent::postProcess();
   }
 
@@ -220,7 +223,9 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       $statusTitle = $this->_childLabel . " ended";
     }
     $session->setStatus($statusMessage, $statusTitle, "success");
-    CRM_Utils_System::redirect($session->readUserContext());
+
+    $contactSegmentUrl= CRM_Utils_System::url('civicrm/contact/view', 'action=browse&selectedChild=contactSegments&reset=1&cid='.$this->_contactId, true);
+    CRM_Utils_System::redirect($contactSegmentUrl);
   }
 
   /**
