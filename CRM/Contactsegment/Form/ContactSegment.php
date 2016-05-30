@@ -87,8 +87,9 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       $this->saveContactSegment($this->_submitValues);
     }
 
+    $session = CRM_Core_Session::singleton();
     $contactSegmentUrl= CRM_Utils_System::url('civicrm/contact/view', 'action=browse&selectedChild=contactSegments&reset=1&cid='.$this->_contactId, true);
-    CRM_Utils_System::redirect($contactSegmentUrl);
+    $session->replaceUserContext($contactSegmentUrl);
     parent::postProcess();
   }
 
