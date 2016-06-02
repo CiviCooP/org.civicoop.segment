@@ -20,6 +20,11 @@
     <div class="content">{$form.segment_parent.html}</div>
     <div class="clear"></div>
   </div>
+  <div class="crm-section">
+    <div class="label">{$form.is_active.label}</div>
+    <div class="content">{$form.is_active.html}</div>
+    <div class="clear"></div>
+  </div>
   {* FOOTER *}
   <div class="crm-submit-buttons">
     {include file="CRM/common/formButtons.tpl" location="bottom"}

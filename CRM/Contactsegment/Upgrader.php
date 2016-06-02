@@ -35,4 +35,14 @@ class CRM_Contactsegment_Upgrader extends CRM_Contactsegment_Upgrader_Base {
     CRM_Contactsegment_BAO_Segment::buildSegmentTree();
     return TRUE;
   }
+  
+  public function upgrade_1002() {
+    CRM_Core_DAO::executeQuery(
+      "ALTER TABLE civicrm_segment 
+        ADD COLUMN
+         is_active TINYINT UNSIGNED DEFAULT '1'
+        AFTER parent_id "
+    );
+    return true;
+  }
 }

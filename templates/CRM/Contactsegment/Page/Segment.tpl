@@ -16,6 +16,7 @@
           <th>{ts}Label{/ts}</th>
           <th>{ts}Type{/ts}</th>
           <th>{ts}{$parentSegmentLabel}{/ts}</th>
+          <th>{ts}Is active?{/ts}</th>
           <th id="nosort"></th>
         </tr>
       </thead>
@@ -34,6 +35,11 @@
             <td><strong>{$segment.type}</strong></td>
           {/if}
           <td>{$segment.parent}</td>
+          <td>
+            {if ($segment.is_active)}
+            <img id="isActive" src="{$config->resourceBase}i/check.gif" alt="Is active">
+            {/if}
+          </td>
           <td>
               <span>
                 {foreach from=$segment.actions item=actionLink}

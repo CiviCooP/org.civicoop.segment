@@ -112,6 +112,11 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
         $defaults['segment_parent'] = $this->_segment['parent_id'];
       }
     }
+    $defaults['is_active'] = true;
+    if ($this->_segmentId && empty($this->_segment['is_active'])) {
+      $defaults['is_active'] = false;
+    }
+
     return $defaults;
   }
 
@@ -132,6 +137,7 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
       $this->addGroup($typeOptions, 'segment_type_list', ts('Type'));
     }
     $this->add('select', 'segment_parent', ts('Parent'), $parentList);
+    $this->add('checkbox', 'is_active', ts('Is active'));
     $this->addButtons(array(
       array('type' => 'next', 'name' => ts('Save'), 'isDefault' => true,),
       array('type' => 'cancel', 'name' => ts('Cancel'))));
@@ -149,6 +155,7 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
       $params['id'] = $formValues['segment_id'];
     }
     $params['label'] = $formValues['segment_label'];
+    $params['is_active'] = $formValues['is_active'] ? '1' : '0';
     $params['name'] = CRM_Contactsegment_Utils::generateNameFromLabel($params['label']);
     if ($this->_action == CRM_Core_Action::ADD) {
       $segmentType = key($formValues['segment_type_list']);

@@ -51,6 +51,10 @@ class CRM_Contactsegment_DAO_Segment extends CRM_Core_DAO {
           'name' => 'parent_id',
           'type' => CRM_Utils_Type::T_INT,
         ),
+        'is_active' => array(
+          'name' => 'is_active',
+          'type' => CRM_Utils_Type::T_INT,
+        ),
       );
     }
     return self::$_fields;
@@ -68,7 +72,8 @@ class CRM_Contactsegment_DAO_Segment extends CRM_Core_DAO {
         'id' => 'id',
         'name' => 'name',
         'label' => 'label',
-        'parent_id' => 'parent_id'
+        'parent_id' => 'parent_id',
+        'is_active' => 'is_active',
       );
     }
     return self::$_fieldKeys;

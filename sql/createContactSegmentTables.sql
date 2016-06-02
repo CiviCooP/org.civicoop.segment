@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS civicrm_segment (
   name VARCHAR(128) NULL,
   label VARCHAR(128) NULL,
   parent_id INT UNSIGNED NULL,
+  is_active TINYINT UNSIGNED DEFAULT '1',
   PRIMARY KEY (id),
   UNIQUE INDEX id_UNIQUE (id ASC))
   ENGINE = InnoDB;

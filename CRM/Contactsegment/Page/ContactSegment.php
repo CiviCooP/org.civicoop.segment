@@ -43,9 +43,9 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
   private function getParentsWithChildren($isActive) {
     $selectedChildren = array();
     $rows = array();
-    $queryParents = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date, is_active, label, parent_id
+    $queryParents = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date, cs.is_active, label, parent_id
       FROM civicrm_contact_segment cs JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
-      WHERE contact_id = %1 AND parent_id IS NULL AND is_active = %2 ORDER BY role_value DESC";
+      WHERE contact_id = %1 AND parent_id IS NULL AND cs.is_active = %2 ORDER BY role_value DESC";
     $paramsParents = array(
       1 => array($this->_contactId, 'Integer'),
       2 => array($isActive, 'Integer'));
@@ -54,9 +54,9 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
     while ($daoParents->fetch()) {
       $rows[$daoParents->contact_segment_id] = $this->buildContactSegmentRow($daoParents);
       $queryChildren = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date,
-        is_active, label, parent_id FROM civicrm_contact_segment cs
+        cs.is_active, label, parent_id FROM civicrm_contact_segment cs
         JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
-        WHERE contact_id = %1 AND parent_id = %2 AND role_value = %3 AND is_active = %4 ORDER BY role_value DESC";
+        WHERE contact_id = %1 AND parent_id = %2 AND role_value = %3 AND cs.is_active = %4 ORDER BY role_value DESC";
       $paramsChildren = array(
         1 => array($this->_contactId, 'Integer'),
         2 => array($daoParents->segment_id, 'Integer'),
@@ -83,9 +83,9 @@ class CRM_Contactsegment_Page_ContactSegment extends CRM_Core_Page {
   private function addFloatingChildren($selectedChildren) {
     $floatingRows = array();
     $query = "SELECT cs.id AS contact_segment_id, segment_id, role_value, start_date, end_date,
-      is_active, label, parent_id FROM civicrm_contact_segment cs
+      cs.is_active, label, parent_id FROM civicrm_contact_segment cs
       JOIN civicrm_segment sgmnt ON cs.segment_id = sgmnt.id
-      WHERE contact_id = %1 AND is_active = %2 AND parent_id IS NOT NULL";
+      WHERE contact_id = %1 AND cs.is_active = %2 AND parent_id IS NOT NULL";
     $params = array(
       1 => array($this->_contactId, 'Integer'),
       2 => array(0, 'Integer')

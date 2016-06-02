@@ -74,10 +74,41 @@ class CRM_Contactsegment_BAO_Segment extends CRM_Contactsegment_DAO_Segment {
       $segment->name = CRM_Contactsegment_Utils::generateNameFromLabel($segment->label);
     }
     $segment->save();
+
+    if (!$segment->is_active) {
+      CRM_Contactsegment_BAO_Segment::setInactive($segment->id);
+    }
+
     // post hook
     CRM_Utils_Hook::post($op, 'Segment', $segment->id, $segment);
     self::storeValues($segment, $result);
     return $result;
+  }
+
+  /**
+   * Function to set the inactive flag of a segment.
+   *
+   * This function will also set the child segments to inactive and will
+   * set the end date for contactsegments.
+   *
+   * @param $segmentId
+   */
+  public static function setInactive($segmentId) {
+    // Set active contact segments to inactive with an end date to today.
+    $today = new DateTime();
+    $contact_segments = civicrm_api3('ContactSegment', 'get', array('segment_id' => $segmentId, 'is_active' => '1'));
+    foreach($contact_segments['values'] as $contact_segment) {
+      $contact_segment['is_active'] = 0;
+      $contact_segment['end_date'] = $today->format('Ymd');
+      civicrm_api3('ContactSegment', 'create', $contact_segment);
+    }
+
+    // Set child segment to inactive
+    $child_segments = civicrm_api3('Segment', 'get', array('parent_id' => $segmentId));
+    foreach($child_segments['values'] as $child_segment) {
+      $child_segment['is_active'] = false;
+      civicrm_api3('Segment', 'create', $child_segment);
+    }
   }
 
   /**

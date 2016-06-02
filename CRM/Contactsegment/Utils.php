@@ -226,6 +226,9 @@ class CRM_Contactsegment_Utils {
     $parents = civicrm_api3('Segment', 'Get', array('parent_id' => 'null'));
     foreach ($parents['values'] as $parentId => $parent) {
       $parentList[$parentId] = $parent['label'];
+      if (empty($parent['is_active'])) {
+        $parentList[$parentId] .= ' '.ts('(inactive)');
+      }
     }
     asort($parentList);
     return $parentList;
@@ -248,6 +251,9 @@ class CRM_Contactsegment_Utils {
     $children = civicrm_api3('Segment', 'Get', array('parent_id' => $parentId));
     foreach ($children['values'] as $childId => $child) {
       $childList[$childId] = $child['label'];
+      if (empty($child['is_active'])) {
+        $childList[$childId] .= ' '.ts('(inactive)');
+      }
     }
     asort($childList);
     return $childList;

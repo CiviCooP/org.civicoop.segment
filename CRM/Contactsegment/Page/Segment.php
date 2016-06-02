@@ -40,6 +40,7 @@ class CRM_Contactsegment_Page_Segment extends CRM_Core_Page {
     while ($daoSegments->fetch()) {
       $row = array();
       $row['label'] = $daoSegments->label;
+      $row['is_active'] = $daoSegments->is_active ? true : false;
       if (empty($daoSegments->parent_id)) {
         $row['type'] = $this->_segmentSetting['parent_label'];
         $row['parent'] = "";
