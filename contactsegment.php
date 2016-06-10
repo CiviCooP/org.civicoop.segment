@@ -10,6 +10,26 @@ function contactsegment_civicrm_buildForm($formName, &$form) {
     CRM_Core_Resources::singleton()->addScriptFile('org.civicoop.contactsegment', 'contactsegment.js');
   }
 }
+
+/**
+ * Implements hook_civicrm_alterAPIPermissions().
+ *
+ * Set permission for Contact Segment APIs to
+ * 'access CiviCRM' instead of the default 'administer CiviCRM'.
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_alterAPIPermissions
+ */
+function contactsegment_civicrm_alterAPIPermissions($entity, $action, $params, &$permissions) {
+  $permissions['segment']['get'] = array('access CiviCRM');
+  $permissions['segment']['create'] = array('access CiviCRM');
+  $permissions['segment']['delete'] = array('access CiviCRM');
+  $permissions['contactsegment']['get'] = array('access CiviCRM');
+  $permissions['contactsegment']['create'] = array('access CiviCRM');
+  $permissions['contactsegment']['delete'] = array('access CiviCRM');
+  $permissions['segmentsetting']['get'] = array('access CiviCRM');
+  $permissions['segmentsetting']['create'] = array('access CiviCRM');
+}
+
 /**
  * Implements hook_civicrm_config().
  *
