@@ -312,6 +312,29 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
           return $errors;
         }
       }
+    } else {
+      // Also do validation on update but do not count itself
+      $sql = 'SELECT COUNT(*) FROM civicrm_contact_segment WHERE id != %1 AND contact_id = %2 AND role_value = %3 AND segment_id = %4';
+      $sqlParams[1] = array($fields['contact_segment_id'], 'Integer');
+      $sqlParams[2] = array($fields['contact_id'], 'Integer');
+      $sqlParams[3] = array($fields['contact_segment_role'], 'String');
+      if (!$fields['segment_child']) {
+        $sqlParams[4] = array($fields['segment_parent'], 'Integer');
+        $countSegment = CRM_Core_DAO::executeQuery($sql, $sqlParams);
+        if ($countSegment > 0) {
+          $errors['segment_parent'] = ts('Contact is already linked to '.$segmentSettings['parent_label']
+            .', edit the existing link if required');
+          return $errors;
+        }
+      } else {
+        $sqlParams[4] = array($fields['segment_child'], 'Integer');
+        $countSegment = CRM_Core_DAO::singleValueQuery($sql, $sqlParams);
+        if ($countSegment > 0) {
+          $errors['segment_child'] = ts('Contact is already linked to '.$segmentSettings['child_label']
+            .', edit the existing link if required');
+          return $errors;
+        }
+      }
     }
     return TRUE;
   }
