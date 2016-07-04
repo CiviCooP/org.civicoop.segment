@@ -320,7 +320,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       $sqlParams[3] = array($fields['contact_segment_role'], 'String');
       if (!$fields['segment_child']) {
         $sqlParams[4] = array($fields['segment_parent'], 'Integer');
-        $countSegment = CRM_Core_DAO::executeQuery($sql, $sqlParams);
+        $countSegment = CRM_Core_DAO::singleValueQuery($sql, $sqlParams);
         if ($countSegment > 0) {
           $errors['segment_parent'] = ts('Contact is already linked to '.$segmentSettings['parent_label']
             .', edit the existing link if required');
