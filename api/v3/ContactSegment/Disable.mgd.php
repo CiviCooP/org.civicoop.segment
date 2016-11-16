@@ -11,8 +11,8 @@ return array (
     'params' => 
     array (
       'version' => 3,
-      'name' => 'Disable Expired ContactSegments',
-      'description' => 'Disable all Contact Segments where End Date is less than today',
+      'name' => 'Process Expired or New ContactSegments',
+      'description' => 'Disable all Contact Segments where End Date is less than or equal today and enable all the ones where Start Date is today',
       'run_frequency' => 'Daily',
       'api_entity' => 'ContactSegment',
       'api_action' => 'Disable',

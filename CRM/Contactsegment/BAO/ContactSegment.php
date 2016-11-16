@@ -58,9 +58,9 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
       $contactSegment->id = $params['id'];
       // pre hook if edit
       $op = "edit";
+      $contactSegment->find(true);
       self::storeValues($contactSegment, $preContactSegment);
       CRM_Utils_Hook::pre($op, 'ContactSegment', $contactSegment->id, $preContactSegment);
-      $contactSegment->find(true);
     } else {
       $params['is_active'] = 1;
     }
@@ -70,10 +70,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
         $contactSegment->$paramKey = $paramValue;
       }
     }
-    if (!$contactSegment->start_date) {
-      $contactSegment->start_date = date("Ymd");
-    }
-    $contactSegment->processEndDate($params);
+    $contactSegment->processStartEndDate($params);
     $contactSegment->save();
     // post hook
     CRM_Utils_Hook::post($op, 'ContactSegment', $contactSegment->id, $contactSegment);
@@ -222,22 +219,31 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
   }
 
   /**
-   * Method to process end date and set is active accordingly
+   * Method to process start and end date and set is active accordingly
+   * - if end date is set and today or earlier, is_active = 0
+   * - if start_date is set and later than today, is_active = 0
+   * - in all other cases, is_active = 1
    *
    * @param array $params
    * $access private
    */
-  private function processEndDate($params) {
-    if (!isset($params['end_date']) || empty($params['end_date'])) {
-      $this->end_date = '';
-      $this->is_active = 1;
-    } else {
+  private function processStartEndDate($params) {
+    $this->is_active = 1;
+    $nowDate = new DateTime();
+    if (isset($params['start_date']) && !empty($params['start_date'])) {
+      $startDate = new DateTime($params['start_date']);
+      if ($startDate > $nowDate) {
+        $this->is_active = 0;
+        return;
+      }
+    }
+    if (isset($params['end_date']) && !empty($params['end_date'])) {
       $endDate = new DateTime($params['end_date']);
-      $nowDate = new DateTime();
       if ($endDate <= $nowDate) {
         $this->is_active = 0;
       }
     }
+    return;
   }
 
   /**

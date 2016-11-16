@@ -11,11 +11,24 @@
  * @throws API_Exception
  */
 function civicrm_api3_contact_segment_disable($params) {
-  $query = "UPDATE civicrm_contact_segment SET is_active = %1 WHERE end_date < CURDATE() AND is_active = %2";
-  $queryParams = array(
-    1 => array(0, "Integer"),
-    2 => array(1, "Integer"));
-  CRM_Core_DAO::executeQuery($query, $queryParams);
+  $sql = "SELECT id FROM civicrm_contact_segment WHERE end_date <= CURDATE() AND is_active = %1";
+  $dao = CRM_Core_DAO::executeQuery($sql, array(1 => array(1, 'Integer')));
+  while ($dao->fetch()) {
+    civicrm_api3('ContactSegment', 'create', array(
+      'id' => $dao->id,
+      'end_date' => date('Y-m-d'),
+      'is_active'=> 0
+    ));
+  }
+  $sql = "SELECT id FROM civicrm_contact_segment WHERE start_date = CURDATE() AND is_active = %1";
+  $dao = CRM_Core_DAO::executeQuery($sql, array(1 => array(0, 'Integer')));
+  while ($dao->fetch()) {
+    civicrm_api3('ContactSegment', 'create', array(
+      'id' => $dao->id,
+      'start_date' => date('Y-m-d'),
+      'is_active'=> 1
+    ));
+  }
   return civicrm_api3_create_success(array(), $params, 'ContactSegment', 'Disable');
 }
 

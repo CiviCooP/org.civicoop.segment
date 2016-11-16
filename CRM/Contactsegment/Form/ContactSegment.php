@@ -178,7 +178,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     if ($formValues['end_date']) {
       $params['end_date'] = $formValues['end_date'];
     }
-    $contactSegment = civicrm_api3('ContactSegment', 'Create', $params);
+    $contactSegment = civicrm_api3('ContactSegment', 'create', $params);
     $this->_contactSegment = $contactSegment['values'];
     $session = CRM_Core_Session::singleton();
     $session->setStatus("Contact linked to ".$segmentLabel." as ".$formValues['contact_segment_role'],

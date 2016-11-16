@@ -41,11 +41,6 @@ function _civicrm_api3_contact_segment_create_spec(&$spec) {
     'title' => 'end_date',
     'type' => CRM_Utils_Type::T_DATE
   );
-  $spec['is_active'] = array(
-    'name' => 'is_active',
-    'title' => 'is_active',
-    'type' => CRM_Utils_Type::T_INT
-  );
 }
 
 /**
