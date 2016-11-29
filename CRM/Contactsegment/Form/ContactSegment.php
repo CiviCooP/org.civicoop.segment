@@ -174,10 +174,15 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
     $segmentLabel = civicrm_api3('Segment', 'Getvalue', array('id' => $params['segment_id'], 'return' => 'label'));
     if ($formValues['start_date']) {
       $params['start_date'] = $formValues['start_date'];
+    } elseif (isset($formValues['start_date']) && empty($formValues['start_date'])) {
+      $params['start_date'] = false;
     }
     if ($formValues['end_date']) {
       $params['end_date'] = $formValues['end_date'];
+    } elseif (isset($formValues['end_date']) && empty($formValues['end_date'])) {
+      $params['end_date'] = false;
     }
+
     $contactSegment = civicrm_api3('ContactSegment', 'create', $params);
     $this->_contactSegment = $contactSegment['values'];
     $session = CRM_Core_Session::singleton();
