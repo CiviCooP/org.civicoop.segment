@@ -46,7 +46,11 @@ class CRM_Contactsegment_Page_Segment extends CRM_Core_Page {
         $row['parent'] = "";
       } else {
         $row['type'] = $this->_segmentSetting['child_label'];
-        $row['parent'] = civicrm_api3('Segment', 'Getvalue', array('id' => $daoSegments->parent_id, 'return' => 'label'));
+        try {
+          $row['parent'] = civicrm_api3('Segment', 'Getvalue', array('id' => $daoSegments->parent_id, 'return' => 'label'));
+        } catch (CiviCRM_API3_Exception $ex) {
+          $row['parent'] = '';
+        }
       }
       $row['actions'] = $this->setRowActions($daoSegments);
       $displaySegments[$daoSegments->id] = $row;
