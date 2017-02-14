@@ -66,6 +66,13 @@ class CRM_Contactsegment_Page_Segment extends CRM_Core_Page {
     $viewUrl = CRM_Utils_System::url('civicrm/segment', 'action=view&sid='.$daoSegments->id, true);
     $pageActions[] = '<a class="action-item" title="View" href="'.$viewUrl.'">View</a>';
     $pageActions[] = '<a class="action-item" title="Edit" href="'.$editUrl.'">Edit</a>';
+    if ($daoSegments->is_active == 0) {
+      $enableUrl = CRM_Utils_System::url('civicrm/segment', 'action=enable&sid='.$daoSegments->id, true);
+      $pageActions[] = '<a class="action-item" title="Enable" href="'.$enableUrl.'">Enable</a>';
+    } else {
+      $disableUrl = CRM_Utils_System::url('civicrm/segment', 'action=disable&sid='.$daoSegments->id, true);
+      $pageActions[] = '<a class="action-item" title="Disable" href="'.$disableUrl.'">Disable</a>';
+    }
     $deleteUrl = CRM_Utils_System::url('civicrm/segment', 'action=delete&sid='.$daoSegments->id);
     $pageActions[] = '<a class="action-item" title="Delete" href="'.$deleteUrl.'">Delete</a>';
     return $pageActions;

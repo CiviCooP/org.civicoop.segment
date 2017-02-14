@@ -52,6 +52,12 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
     if ($this->_action == CRM_Core_Action::DELETE) {
       $this->deleteSegmentAndReturn();
     }
+    if ($this->_action == CRM_Core_Action::DISABLE) {
+      $this->disableSegmentAndReturn();
+    }
+    if ($this->_action == CRM_Core_Action::ENABLE) {
+      $this->enableSegmentAndReturn();
+    }
     switch ($this->_action) {
       case CRM_Core_Action::ADD:
         $actionLabel = "Add";
@@ -59,7 +65,7 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
         break;
       case CRM_Core_Action::UPDATE:
         $actionLabel = "Edit";
-        if (!$this->_segment['parent_id']) {
+        if (!isset($this->_segment['parent_id']) || empty($this->_segment['parent_id'])) {
           $segmentTypeLabel = $this->_parentLabel;
         } else {
           $segmentTypeLabel = $this->_childLabel;
@@ -107,9 +113,11 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
       $defaults['segment_type'] = 'child';
     }
     if ($this->_action == CRM_Core_Action::VIEW || $this->_action == CRM_Core_Action::UPDATE) {
-      $defaults['segment_label'] = $this->_segment['label'];
-      if ($this->_segment['parent_id']) {
-        $defaults['segment_parent'] = $this->_segment['parent_id'];
+      if (isset($this->_segment['label'])) {
+        $defaults['segment_label'] = $this->_segment['label'];
+        if (!isset($this->_segment['parent_id']) || empty($this->_segment['parent_id'])) {
+          $defaults['segment_parent'] = $this->_segment['parent_id'];
+        }
       }
     }
     $defaults['is_active'] = true;
@@ -155,13 +163,19 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
       $params['id'] = $formValues['segment_id'];
     }
     $params['label'] = $formValues['segment_label'];
-    $params['is_active'] = $formValues['is_active'] ? '1' : '0';
+    if (isset($formValues['is_active'])) {
+      $params['is_active'] = $formValues['is_active'] ? '1' : '0';
+    } else {
+      $params['is_active'] = 0;
+    }
     $params['name'] = CRM_Contactsegment_Utils::generateNameFromLabel($params['label']);
     if ($this->_action == CRM_Core_Action::ADD) {
       $segmentType = key($formValues['segment_type_list']);
     } else {
       if ($formValues['segment_parent']) {
         $segmentType = 1;
+      } else {
+        $segmentType = 0;
       }
     }
     switch ($segmentType) {
@@ -196,6 +210,44 @@ class CRM_Contactsegment_Form_Segment extends CRM_Core_Form {
       $statusTitle = $this->_childLabel." deleted";
     }
     civicrm_api3('Segment', 'Delete', array('id' => $this->_segmentId));
+    $session = CRM_Core_Session::singleton();
+    $session->setStatus($statusMessage, $statusTitle, "success");
+    CRM_Utils_System::redirect($session->readUserContext());
+  }
+
+  /**
+   * Method to disable segment
+   *
+   */
+  protected function disableSegmentAndReturn() {
+    if (!$this->_segment['parent_id']) {
+      $statusMessage = $this->_parentLabel." ".$this->_segment['label']." disabled";
+      $statusTitle = $this->_parentLabel." disabled";
+    } else {
+      $statusMessage = $this->_childLabel." ".$this->_segment['label']." from "
+        .$this->_parentLabel." ".$this->getSegmentParentLabel($this->_segment['parent_id'])." disabled";
+      $statusTitle = $this->_childLabel." disabled";
+    }
+    civicrm_api3('Segment', 'Create', array('id' => $this->_segmentId, 'is_active' => 0));
+    $session = CRM_Core_Session::singleton();
+    $session->setStatus($statusMessage, $statusTitle, "success");
+    CRM_Utils_System::redirect($session->readUserContext());
+  }
+
+  /**
+   * Method to enable segment
+   *
+   */
+  protected function enableSegmentAndReturn() {
+    if (!$this->_segment['parent_id']) {
+      $statusMessage = $this->_parentLabel." ".$this->_segment['label']." enabled";
+      $statusTitle = $this->_parentLabel." disabled";
+    } else {
+      $statusMessage = $this->_childLabel." ".$this->_segment['label']." from "
+        .$this->_parentLabel." ".$this->getSegmentParentLabel($this->_segment['parent_id'])." enabled";
+      $statusTitle = $this->_childLabel." enabled";
+    }
+    civicrm_api3('Segment', 'Create', array('id' => $this->_segmentId, 'is_active' => 1));
     $session = CRM_Core_Session::singleton();
     $session->setStatus($statusMessage, $statusTitle, "success");
     CRM_Utils_System::redirect($session->readUserContext());

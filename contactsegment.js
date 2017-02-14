@@ -8,6 +8,7 @@
  * @param parentId
  */
 function getSegmentChildren(parentId) {
+  var inactiveLabel = " (inactive) ";
   cj("#segment_child option").remove();
   cj("#segment_child").append("<option value=0>- select -</option>");
   CRM.api('Segment', 'Get', {"parent_id":parentId}, {
@@ -15,7 +16,11 @@ function getSegmentChildren(parentId) {
       cj.each(data, function(key, value) {
         if (key == "values") {
           cj.each(value, function(segmentKey, segmentValue) {
-            cj("#segment_child").append("<option value=" + segmentKey + ">" + segmentValue.label + "</option>");
+            if (segmentValue.is_active == 1) {
+              cj("#segment_child").append("<option value=" + segmentKey + ">" + segmentValue.label + "</option>");
+            } else {
+              cj("#segment_child").append("<option value=" + segmentKey + ">" + segmentValue.label + inactiveLabel + "</option>");
+            }
           })
         }
       });

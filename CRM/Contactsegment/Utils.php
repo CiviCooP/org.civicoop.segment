@@ -225,7 +225,11 @@ class CRM_Contactsegment_Utils {
     $parentList = array();
     $parents = civicrm_api3('Segment', 'Get', array('parent_id' => 'null'));
     foreach ($parents['values'] as $parentId => $parent) {
-      $parentList[$parentId] = $parent['label'];
+      if (isset($parent['label'])) {
+        $parentList[$parentId] = $parent['label'];
+      } else {
+        $parentList[$parentId] = " - not specified -";
+      }
       if (empty($parent['is_active'])) {
         $parentList[$parentId] .= ' '.ts('(inactive)');
       }
