@@ -137,7 +137,8 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       if (isset($this->_contactSegment['segment_id'])) {
         $childList = array("- select -") + CRM_Contactsegment_Utils::getChildList($this->_contactSegment['segment_id']);
       } else {
-        $defaultParentId = CRM_Core_DAO::singleValueQuery('SELECT id FROM civicrm_segment where parent_id IS NULL ORDER BY label ASC LIMIT 1');
+        $sql = 'SELECT id FROM civicrm_segment where parent_id IS NULL AND is_active = %1 ORDER BY label ASC LIMIT 1';
+        $defaultParentId = CRM_Core_DAO::singleValueQuery($sql, array(1 => array(1, 'Integer')));
         $childList = array("- select -") + CRM_Contactsegment_Utils::getChildList($defaultParentId);
       }
     }

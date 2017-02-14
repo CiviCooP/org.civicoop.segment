@@ -223,15 +223,12 @@ class CRM_Contactsegment_Utils {
    */
   public static function getParentList() {
     $parentList = array();
-    $parents = civicrm_api3('Segment', 'Get', array('parent_id' => 'null'));
+    $parents = civicrm_api3('Segment', 'Get', array('parent_id' => 'null', 'is_active' => 1));
     foreach ($parents['values'] as $parentId => $parent) {
       if (isset($parent['label'])) {
         $parentList[$parentId] = $parent['label'];
       } else {
         $parentList[$parentId] = " - not specified -";
-      }
-      if (empty($parent['is_active'])) {
-        $parentList[$parentId] .= ' '.ts('(inactive)');
       }
     }
     asort($parentList);
@@ -252,12 +249,9 @@ class CRM_Contactsegment_Utils {
       $parentId = CRM_Core_DAO::singleValueQuery($query);
     }
     $childList = array();
-    $children = civicrm_api3('Segment', 'Get', array('parent_id' => $parentId));
+    $children = civicrm_api3('Segment', 'Get', array('parent_id' => $parentId, 'is_active' => 1));
     foreach ($children['values'] as $childId => $child) {
       $childList[$childId] = $child['label'];
-      if (empty($child['is_active'])) {
-        $childList[$childId] .= ' '.ts('(inactive)');
-      }
     }
     asort($childList);
     return $childList;
@@ -274,8 +268,8 @@ class CRM_Contactsegment_Utils {
     $childList = array();
     $query = 'SELECT child.id AS childId, parent.label AS parentLabel, child.label AS childLabel
       FROM civicrm_segment child JOIN civicrm_segment parent ON child.parent_id = parent.id
-      WHERE child.parent_id IS NOT NULL';
-    $dao = CRM_Core_DAO::executeQuery($query);
+      WHERE child.parent_id IS NOT NULL AND is_active = %1';
+    $dao = CRM_Core_DAO::executeQuery($query, array(1 => array(1, 'Integer')));
     while ($dao->fetch()) {
       $childList[$dao->childId] = '('.$dao->parentLabel.') '.$dao->childLabel;
     }

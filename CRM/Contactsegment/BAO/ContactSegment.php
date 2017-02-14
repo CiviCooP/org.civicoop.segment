@@ -45,6 +45,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
    * @static
    */
   public static function add($params) {
+    CRM_Core_Error::debug('params in add ', $params);
     $result = array();
     $preContactSegment = array();
     if (empty($params)) {
@@ -167,7 +168,7 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
         'contact_id' => $contactSegment->contact_id,
         'segment_id' => $segmentParent,
         'role_value' => $contactSegment->role_value));
-    if (!$contactSegment->end_date) {
+    if (!isset($contactSegment->end_date) || empty($contactSegment->end_date)) {
       $query = 'UPDATE civicrm_contact_segment SET is_active = %1, end_date = %2 WHERE id = %3';
       $params = array(
         1 => array(1, 'Integer'),

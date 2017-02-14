@@ -11,16 +11,12 @@ function getSegmentChildren(parentId) {
   var inactiveLabel = " (inactive) ";
   cj("#segment_child option").remove();
   cj("#segment_child").append("<option value=0>- select -</option>");
-  CRM.api('Segment', 'Get', {"parent_id":parentId}, {
+  CRM.api('Segment', 'Get', {"parent_id":parentId, "is_active":1}, {
     success: function(data) {
       cj.each(data, function(key, value) {
         if (key == "values") {
           cj.each(value, function(segmentKey, segmentValue) {
-            if (segmentValue.is_active == 1) {
-              cj("#segment_child").append("<option value=" + segmentKey + ">" + segmentValue.label + "</option>");
-            } else {
-              cj("#segment_child").append("<option value=" + segmentKey + ">" + segmentValue.label + inactiveLabel + "</option>");
-            }
+            cj("#segment_child").append("<option value=" + segmentKey + ">" + segmentValue.label + "</option>");
           })
         }
       });

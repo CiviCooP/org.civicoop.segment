@@ -92,22 +92,24 @@ class CRM_Contactsegment_BAO_Segment extends CRM_Contactsegment_DAO_Segment {
    * set the end date for contactsegments.
    *
    * @param $segmentId
+   * @throws Exception when error from contact segment create
    */
   public static function setInactive($segmentId) {
     // Set active contact segments to inactive with an end date to today.
     $today = new DateTime();
-    $contact_segments = civicrm_api3('ContactSegment', 'get', array('segment_id' => $segmentId, 'is_active' => '1'));
-    foreach($contact_segments['values'] as $contact_segment) {
-      $contact_segment['is_active'] = 0;
-      $contact_segment['end_date'] = $today->format('Ymd');
-      civicrm_api3('ContactSegment', 'create', $contact_segment);
-    }
+    $endDate = $today->format('Y-m-d');
+    $sql = "UPDATE civicrm_contact_segment SET is_active = %1, end_date = %2 WHERE segment_id = %3 and is_active = %4";
+    CRM_Core_DAO::executeQuery($sql, array(
+      1 => array(0, 'Integer'),
+      2 => array($endDate, 'String'),
+      3 => array($segmentId, 'Integer'),
+      4 => array(1, 'Integer')));
 
     // Set child segment to inactive
-    $child_segments = civicrm_api3('Segment', 'get', array('parent_id' => $segmentId));
-    foreach($child_segments['values'] as $child_segment) {
-      $child_segment['is_active'] = false;
-      civicrm_api3('Segment', 'create', $child_segment);
+    $childSegments = civicrm_api3('Segment', 'get', array('parent_id' => $segmentId));
+    foreach($childSegments['values'] as $childSegment) {
+      $childSegment['is_active'] = false;
+      civicrm_api3('Segment', 'create', $childSegment);
     }
   }
 
