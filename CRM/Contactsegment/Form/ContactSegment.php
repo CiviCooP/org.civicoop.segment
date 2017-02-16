@@ -285,60 +285,56 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
   }
 
   /**
-   * Method to validate if contact segment already exists
+   * Method to validate if contact segment already exists taking overlapping dates into consideration
    *
    * @param array $fields
-   * @return array $errors or TRUE
+   * @return array|bool $errors or TRUE
    * @access public
    * @static
    */
   static function validateExists($fields) {
     $errors = array();
     $segmentSettings = civicrm_api3('SegmentSetting', 'Getsingle', array());
-    // only if empty contact_segment_id, meaning it is add action
-    if (empty($fields['contact_segment_id'])) {
-      if (!$fields['segment_child']) {
-        $countSegment = civicrm_api3('ContactSegment', 'Getcount', array(
-          'contact_id' => $fields['contact_id'],
-          'role_value' => $fields['contact_segment_role'],
-          'segment_id' => $fields['segment_parent']));
-        if ($countSegment > 0) {
-          $errors['segment_parent'] = ts('Contact is already linked to '.$segmentSettings['parent_label']
-            .', edit the existing link if required');
+    // determine if we are dealing with parent or child
+    if (!$fields['segment_child']) {
+      $segmentId = $fields['segment_parent'];
+      $segmentErrorLabel = $segmentSettings['parent_label'];
+      $errorIndex = 'segment_parent';
+    } else {
+      $segmentId = $fields['segment_child'];
+      $segmentErrorLabel = $segmentSettings['child_label'];
+      $errorIndex = 'segment_child';
+    }
+    // retrieve all existing contact segments with the same segment, contact and role
+    $foundContactSegments = civicrm_api3('ContactSegment', 'get', array(
+      'contact_id' => $fields['contact_id'],
+      'role_value' => $fields['contact_segment_role'],
+      'segment_id' => $segmentId));
+    // foreach found contact segment, check if it overlaps
+    foreach ($foundContactSegments['values'] as $foundContactSegmentId => $foundContactSegment) {
+      // if we have the same id, ignore (this can be at update time)
+      if (isset($fields['contact_segment_id']) && $fields['contact_segment_id'] != $foundContactSegmentId) {
+        // if found has no end date, then error else check if overlap
+        if (!isset($foundContactSegment['end_date']) || empty($foundContactSegment['end_date'])) {
+          $errors[$errorIndex] = ts('Contact is already linked to ' . $segmentErrorLabel . ', edit the existing link if required');
           return $errors;
-        }
-      } else {
-        $countSegment = civicrm_api3('ContactSegment', 'Getcount', array(
-          'contact_id' => $fields['contact_id'],
-          'role_value' => $fields['contact_segment_role'],
-          'segment_id' => $fields['segment_child']));
-        if ($countSegment > 0) {
-          $errors['segment_child'] = ts('Contact is already linked to '.$segmentSettings['child_label']
-            .', edit the existing link if required');
-          return $errors;
+        } else {
+          if (CRM_Contactsegment_Utils::overlapDates($fields['start_date'], $foundContactSegment['end_date']) == TRUE) {
+            $errors[$errorIndex] = ts('Contact is already linked to ' . $segmentErrorLabel . ', edit the existing link if required');
+            return $errors;
+          }
         }
       }
-    } else {
-      // Also do validation on update but do not count itself
-      $sql = 'SELECT COUNT(*) FROM civicrm_contact_segment WHERE id != %1 AND contact_id = %2 AND role_value = %3 AND segment_id = %4';
-      $sqlParams[1] = array($fields['contact_segment_id'], 'Integer');
-      $sqlParams[2] = array($fields['contact_id'], 'Integer');
-      $sqlParams[3] = array($fields['contact_segment_role'], 'String');
-      if (!$fields['segment_child']) {
-        $sqlParams[4] = array($fields['segment_parent'], 'Integer');
-        $countSegment = CRM_Core_DAO::singleValueQuery($sql, $sqlParams);
-        if ($countSegment > 0) {
-          $errors['segment_parent'] = ts('Contact is already linked to '.$segmentSettings['parent_label']
-            .', edit the existing link if required');
+      if (empty($fields['contact_segment_id'])) {
+        // if found has no end date, then error else check if overlap
+        if (!isset($foundContactSegment['end_date']) || empty($foundContactSegment['end_date'])) {
+          $errors[$errorIndex] = ts('Contact is already linked to ' . $segmentErrorLabel . ', edit the existing link if required');
           return $errors;
-        }
-      } else {
-        $sqlParams[4] = array($fields['segment_child'], 'Integer');
-        $countSegment = CRM_Core_DAO::singleValueQuery($sql, $sqlParams);
-        if ($countSegment > 0) {
-          $errors['segment_child'] = ts('Contact is already linked to '.$segmentSettings['child_label']
-            .', edit the existing link if required');
-          return $errors;
+        } else {
+          if (CRM_Contactsegment_Utils::overlapDates($fields['start_date'], $foundContactSegment['end_date']) == TRUE) {
+            $errors[$errorIndex] = ts('Contact is already linked to ' . $segmentErrorLabel . ', edit the existing link if required');
+            return $errors;
+          }
         }
       }
     }
@@ -349,7 +345,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    * Method to validate if end date is not earlier than or equal to start date
    *
    * @param array $fields
-   * @return array $errors or TRUE
+   * @return array|bool $errors or TRUE
    * @access public
    * @static
    */

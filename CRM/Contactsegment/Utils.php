@@ -338,4 +338,21 @@ class CRM_Contactsegment_Utils {
     }
     return FALSE;
   }
+
+  /**
+   * Method to check if 2 dates overlap
+   *
+   * @param $startDate
+   * @param $endDate
+   * @return bool
+   */
+  public static function overlapDates($startDate, $endDate) {
+    $testStartDate = new DateTime($startDate);
+    $testEndDate = new DateTime($endDate);
+    if ($testEndDate >= $testStartDate) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
 }
