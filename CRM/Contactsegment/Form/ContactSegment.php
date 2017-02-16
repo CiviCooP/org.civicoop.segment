@@ -292,49 +292,71 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
    * @access public
    * @static
    */
-  static function validateExists($fields) {
-    $errors = array();
-    $segmentSettings = civicrm_api3('SegmentSetting', 'Getsingle', array());
-    // determine if we are dealing with parent or child
-    if (!$fields['segment_child']) {
-      $segmentId = $fields['segment_parent'];
-      $segmentErrorLabel = $segmentSettings['parent_label'];
-      $errorIndex = 'segment_parent';
-    } else {
-      $segmentId = $fields['segment_child'];
-      $segmentErrorLabel = $segmentSettings['child_label'];
-      $errorIndex = 'segment_child';
-    }
-    // retrieve all existing contact segments with the same segment, contact and role
-    $foundContactSegments = civicrm_api3('ContactSegment', 'get', array(
-      'contact_id' => $fields['contact_id'],
-      'role_value' => $fields['contact_segment_role'],
-      'segment_id' => $segmentId));
-    // foreach found contact segment, check if it overlaps
-    foreach ($foundContactSegments['values'] as $foundContactSegmentId => $foundContactSegment) {
-      // if we have the same id, ignore (this can be at update time)
-      if (isset($fields['contact_segment_id']) && $fields['contact_segment_id'] != $foundContactSegmentId) {
-        // if found has no end date, then error else check if overlap
-        if (!isset($foundContactSegment['end_date']) || empty($foundContactSegment['end_date'])) {
+  static function validateExists($fields)
+  {
+    // not required if end date and start date are the same (dummy record)
+    if ($fields['start_date'] != $fields['end_date']) {
+      $errors = array();
+      $segmentSettings = civicrm_api3('SegmentSetting', 'Getsingle', array());
+      // determine if we are dealing with parent or child
+      if (!$fields['segment_child']) {
+        $segmentId = $fields['segment_parent'];
+        $segmentErrorLabel = $segmentSettings['parent_label'];
+        $errorIndex = 'segment_parent';
+      } else {
+        $segmentId = $fields['segment_child'];
+        $segmentErrorLabel = $segmentSettings['child_label'];
+        $errorIndex = 'segment_child';
+      }
+      // retrieve all existing contact segments with the same segment, contact and role
+      $foundContactSegments = civicrm_api3('ContactSegment', 'get', array(
+        'contact_id' => $fields['contact_id'],
+        'role_value' => $fields['contact_segment_role'],
+        'segment_id' => $segmentId));
+      // foreach found contact segment, check if it overlaps
+      foreach ($foundContactSegments['values'] as $foundContactSegmentId => $foundContactSegment) {
+        if (CRM_Contactsegment_Form_ContactSegment::checkValidDates($fields, $foundContactSegment) == FALSE) {
           $errors[$errorIndex] = ts('Contact is already linked to ' . $segmentErrorLabel . ', edit the existing link if required');
           return $errors;
-        } else {
-          if (CRM_Contactsegment_Utils::overlapDates($fields['start_date'], $foundContactSegment['end_date']) == TRUE) {
-            $errors[$errorIndex] = ts('Contact is already linked to ' . $segmentErrorLabel . ', edit the existing link if required');
-            return $errors;
-          }
         }
       }
-      if (empty($fields['contact_segment_id'])) {
-        // if found has no end date, then error else check if overlap
-        if (!isset($foundContactSegment['end_date']) || empty($foundContactSegment['end_date'])) {
-          $errors[$errorIndex] = ts('Contact is already linked to ' . $segmentErrorLabel . ', edit the existing link if required');
-          return $errors;
-        } else {
-          if (CRM_Contactsegment_Utils::overlapDates($fields['start_date'], $foundContactSegment['end_date']) == TRUE) {
-            $errors[$errorIndex] = ts('Contact is already linked to ' . $segmentErrorLabel . ', edit the existing link if required');
-            return $errors;
-          }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Method to check if the entered start_date in $fields is allowed in combination with the
+   * $foundContactSegment
+   * 
+   * @param $fields
+   * @param $foundContactSegment
+   * @return bool
+   */
+  static function checkValidDates($fields, $foundContactSegment) {
+    // if start and end date are the same on foundContactSegment, ignore it as it is a dummy record
+    if (isset($foundContactSegment['start_date']) && isset($foundContactSegment['end_date'])) {
+      if ($foundContactSegment['start_date'] == $foundContactSegment['end_date']) {
+        return TRUE;
+      }
+    }
+    // if we have the same id, ignore (this can be at update time)
+    if (isset($fields['contact_segment_id']) && $fields['contact_segment_id'] != $foundContactSegment['id']) {
+      // if found has no end date, then error else check if overlap
+      if (!isset($foundContactSegment['end_date']) || empty($foundContactSegment['end_date'])) {
+        return FALSE;
+      } else {
+        if (CRM_Contactsegment_Utils::overlapDates($fields['start_date'], $foundContactSegment['end_date']) == TRUE) {
+          return FALSE;
+        }
+      }
+    }
+    if (empty($fields['contact_segment_id'])) {
+      // if found has no end date, then error else check if overlap
+      if (!isset($foundContactSegment['end_date']) || empty($foundContactSegment['end_date'])) {
+        return FALSE;
+      } else {
+        if (CRM_Contactsegment_Utils::overlapDates($fields['start_date'], $foundContactSegment['end_date']) == TRUE) {
+          return FALSE;
         }
       }
     }
@@ -355,7 +377,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
       if ($fields['start_date']) {
         $endDate = new DateTime($fields['end_date']);
         $startDate = new DateTime($fields['start_date']);
-        if ($endDate <= $startDate) {
+        if ($endDate < $startDate) {
           $errors['end_date'] = ts('End Date has to be later than Start Date');
           return $errors;
         }
