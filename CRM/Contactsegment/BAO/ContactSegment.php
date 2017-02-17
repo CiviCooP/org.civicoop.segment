@@ -8,6 +8,10 @@
  */
 class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_ContactSegment {
 
+  const NO_STATE_CHANGE = 0;
+  const ACTIVATING_STATE = 1;
+  const DEACTIVATING_STATE = -1;
+
   /**
    * Function to get values
    * 
@@ -45,7 +49,6 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
    * @static
    */
   public static function add($params) {
-    CRM_Core_Error::debug('params in add ', $params);
     $result = array();
     $preContactSegment = array();
     if (empty($params)) {
@@ -55,29 +58,182 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
     $op = "create";
     // check if there is already a record for combination of role_value, contact_id and segment. If so, use that id to edit
     $contactSegment->checkAlreadyExists($params);
+    $id = null;
     if (isset($params['id'])) {
-      $contactSegment->id = $params['id'];
-      // pre hook if edit
       $op = "edit";
-      $contactSegment->find(true);
-      self::storeValues($contactSegment, $preContactSegment);
-      CRM_Utils_Hook::pre($op, 'ContactSegment', $contactSegment->id, $preContactSegment);
-    } else {
-      $params['is_active'] = 1;
+      $id = $params['id'];
     }
+
+    CRM_Utils_Hook::pre($op, 'ContactSegment', $id, $params);
+
+    // Update the is_active status based on start_date or end_date
+    $now = new DateTime();
+    $startDate = false;
+    $endDate = false;
+    if (!empty($params['start_date'])) {
+      $startDate = new DateTime($params['start_date']);
+    }
+    if (!empty($params['end_date'])) {
+      $endDate = new DateTime($params['end_date']);
+    }
+    if ($startDate && $startDate > $now) {
+      $params['is_active'] = '0';
+    } elseif ($endDate && $endDate < $now) {
+      $params['is_active'] = '0';
+    } else {
+      $params['is_active'] = '1';
+    }
+
+    $state = self::NO_STATE_CHANGE;
+    if (!empty($id)) {
+      // Check the current state of the contact segment
+      $currentIsActive = civicrm_api3('ContactSegment', 'getvalue', array('id' => $id, 'return' => 'is_active'));
+      if ($currentIsActive && !$params['is_active']) {
+        $state = self::DEACTIVATING_STATE;
+      } elseif (!$currentIsActive && $params['is_active']) {
+        $state = self::ACTIVATING_STATE;
+      }
+    } elseif ($params['is_active'] == '0') {
+      $state = self::DEACTIVATING_STATE;
+    } elseif ($params['is_active'] == '1') {
+      $state = self::ACTIVATING_STATE;
+    }
+
+    // Check whether we are dealing with a parent of a child
+    // First find the linked segment and based on that decided on the existence of
+    // the parent id whether we are updating a child or a parent.
+    $segment = new CRM_Contactsegment_BAO_Segment();
+    $segment->id = $params['segment_id'];
+    if (!$segment->find(true)) {
+      throw new Exception('Could not find the linked segment');
+    }
+
+    if (!empty($segment->parent_id) && !empty($params['is_active'])) {
+      // This is a child contact segment which is activated
+
+      // Check whether this valid
+      // 1. An active parent contact segment is found and period is in period of the parent
+      // 2 Or when no parents are found at all (then we have a floating child and those are allowed)
+      //
+      // Also update an empty start date or an empty end date when the parent
+      // contact segment has non empty start date or a non empty end date.
+      $parentContactSegmentCount = civicrm_api3('ContactSegment', 'getcount', array('contact_id' => $params['contact_id'], 'segment_id' => $segment->parent_id));
+      $isFloating = false;
+      $periodIsValid = false;
+      if ($parentContactSegmentCount == 0) {
+        $isFloating = true;
+        $insertParentSql = "INSERT INTO civicrm_contact_segment (contact_id, segment_id, start_date, end_date, is_active, role_value) VALUES (%1, %2, %3, %4, '1', %5);";
+        $insertParentParams[1] = array($params['contact_id'], 'Integer');
+        $insertParentParams[2] = array($segment->parent_id, 'Integer');
+        $insertParentParams[3] = array(empty($startDate) ? null : $startDate->format('Ymd'), 'Date');
+        $insertParentParams[4] = array(empty($endDate) ? null : $endDate->format('Ymd'), 'Date');
+        $insertParentParams[5] = array($params['role_value'], 'String');
+        CRM_Core_DAO::executeQuery($insertParentSql, $insertParentParams);
+      } else {
+        $activeContactSegments = civicrm_api3('ContactSegment', 'get', array(
+          'contact_id' => $params['contact_id'],
+          'segment_id' => $segment->parent_id,
+          'is_active' => '1'
+        ));
+        foreach ($activeContactSegments['values'] as $activeContactSegment) {
+          // Period is valid when no start_date and no end_date or set
+          // Or when end date of the parent is empty and the start date is after the start date of the parent
+          // Or when start date of the parent is empty and the end date is before the end date of the parent
+          // Or when start date is between start date of the parent and end date of the parent
+          if (empty($activeContactSegment['start_date']) && empty($activeContactSegment['end_date'])) {
+            $periodIsValid = TRUE;
+          }
+          elseif (!empty($activeContactSegment['start_date']) && empty($activeContactSegment['end_date'])) {
+            $activeContactSegmentStartDate = new DateTime($activeContactSegment['start_date']);
+            if ($startDate && $startDate >= $activeContactSegmentStartDate) {
+              $periodIsValid = TRUE;
+            }
+            elseif (empty($params['start_date'])) {
+              $params['start_date'] = $activeContactSegmentStartDate->format('Ymd');
+              $periodIsValid = TRUE;
+            }
+          }
+          elseif (empty($activeContactSegment['start_date']) && !empty($activeContactSegment['end_date'])) {
+            $activeContactSegmentEndDate = new DateTime($activeContactSegment['end_date']);
+            if ($endDate && $endDate >= $activeContactSegmentEndDate) {
+              $periodIsValid = TRUE;
+            }
+            elseif (empty($params['end_date'])) {
+              $params['end_date'] = $activeContactSegmentEndDate->format('Ymd');
+              $periodIsValid = TRUE;
+            }
+          }
+          elseif (!empty($activeContactSegment['start_date']) && !empty($activeContactSegment['end_date'])) {
+            $activeContactSegmentStartDate = new DateTime($activeContactSegment['start_date']);
+            $activeContactSegmentEndDate = new DateTime($activeContactSegment['end_date']);
+            if (empty($params['start_date'])) {
+              $params['start_date'] = $activeContactSegmentStartDate->format('Ymd');
+            }
+            if (empty($params['end_date'])) {
+              $params['end_date'] = $activeContactSegmentEndDate->format('Ymd');
+            }
+            $startDate = new DateTime($params['start_date']);
+            $endDate = new DateTime($params['end_date']);
+
+            if ($startDate >= $activeContactSegmentStartDate && $startDate <= $activeContactSegmentEndDate && $endDate >= $activeContactSegmentStartDate && $endDate <= $activeContactSegmentEndDate) {
+              $periodIsValid = TRUE;
+            }
+          }
+
+          if ($periodIsValid) {
+            break;
+          }
+        }
+      }
+
+      if (!$isFloating && !$periodIsValid) {
+        throw new CRM_Contactsegment_Exception_InvalidChildPeriod('Invalid period for child contact segment. The period does not fit into an active parent contact segment');
+      }
+    } elseif (empty($segment->parent_id) && $state == self::DEACTIVATING_STATE) {
+      // This is a parent and is deactivated also deactivate the children
+      // We do this with an SQL statement and not with an API call because the SQL
+      // statement is better for performance. Other than that we don't have any reasons to
+      // do this with SQL.
+      $deactiveChildContactSegmentSql = "UPDATE `civicrm_contact_segment` SET `is_active` = '0' WHERE `contact_id` = %1 AND `is_active` = '1' AND `segment_id` IN (SELECT `id` FROM `civicrm_segment` WHERE `parent_id` = %2)";
+      $deactiveChildContactSegmentParams[1] = array($params['contact_id'], 'Integer');
+      $deactiveChildContactSegmentParams[2] = array($params['segment_id'], 'Integer');
+      CRM_Core_DAO::executeQuery($deactiveChildContactSegmentSql, $deactiveChildContactSegmentParams);
+    } elseif (empty($segment->parent_id) && $state == self::ACTIVATING_STATE) {
+      // This is a parent and is activated also the children
+      // We do this with an SQL statement and not with an API call because the SQL
+      // statement is better for performance. Other than that we don't have any reasons to
+      // do this with SQL.
+
+      // Select first all the children then keep track of which child we have updated and only activate
+      // one segment (so if a child segment exists multiple times in the past segments then only update one
+      // of the rows).
+      $alreadyActivatedChildren = array();
+      $activateChildContactSegmentSelectSql = "SELECT * FROM `civicrm_contact_segment` WHERE `contact_id` = %1 AND `is_active` = '0' AND `segment_id` IN (SELECT `id` FROM `civicrm_segment` WHERE `parent_id` = %2)";
+      $activateChildContactSegmentSelectSqlParams[1] = array($params['contact_id'], 'Integer');
+      $activateChildContactSegmentSelectSqlParams[2] = array($params['segment_id'], 'Integer');
+      $activateChildContactSegmentSelectDao = CRM_Core_DAO::executeQuery($activateChildContactSegmentSelectSql, $activateChildContactSegmentSelectSqlParams);
+      while ($activateChildContactSegmentSelectDao->fetch()) {
+        if (!in_array($activateChildContactSegmentSelectDao->segment_id, $alreadyActivatedChildren)) {
+          $activateChildContactSegmentSql = "UPDATE `civicrm_contact_segment` SET `is_active` = '1', start_date = %1, end_date = %2 WHERE id = %3";
+          $activateChildContactSegmentSqlParams[1] = array(empty($startDate) ? null : $startDate->format('Ymd'), 'Date');
+          $activateChildContactSegmentSqlParams[2] = array(empty($endDate) ? null : $endDate->format('Ymd'), 'Date');
+          $activateChildContactSegmentSqlParams[3] = array($activateChildContactSegmentSelectDao->id, 'Integer');
+          CRM_Core_DAO::executeQuery($activateChildContactSegmentSql, $activateChildContactSegmentSqlParams);
+
+          $alreadyActivatedChildren[] = $activateChildContactSegmentSelectDao->segment_id;
+        }
+      }
+    }
+
     $fields = self::fields();
     foreach ($params as $paramKey => $paramValue) {
       if (isset($fields[$paramKey])) {
         $contactSegment->$paramKey = $paramValue;
       }
     }
-    $contactSegment->processStartEndDate($params);
     $contactSegment->save();
-    // post hook
     CRM_Utils_Hook::post($op, 'ContactSegment', $contactSegment->id, $contactSegment);
     self::storeValues($contactSegment, $result);
-    // function to add or update parent if child
-    self::processParentChild($contactSegment);
     return $result;
   }
 
@@ -92,162 +248,6 @@ class CRM_Contactsegment_BAO_ContactSegment extends CRM_Contactsegment_DAO_Conta
         $params['id'] = $id;
       }
     }
-  }
-
-  /**
-   * Method to check if parent needs to be added or updated:
-   * - if child contact segment is added then 3 cases are possible:
-   *   - parent contact segment not there, has to be added
-   *   - parent contact segment there with end date before end date child, set end date to child end date and is_active
-   *   - parent contact segment there with later or same end date, do nothing
-   *
-   * @param $contactSegment
-   * @access private
-   * @static
-   */
-  private static function processParentChild($contactSegment) {
-    $segmentParent = civicrm_api3('Segment', 'Getvalue',
-      array('id' => $contactSegment->segment_id, 'return' => 'parent_id'));
-    if ($segmentParent) {
-      $countParentParams = array(
-        'contact_id' => $contactSegment->contact_id,
-        'role_value' => $contactSegment->role_value,
-        'segment_id' => $segmentParent);
-      $countParentContactSegment = civicrm_api3('ContactSegment', 'Getcount', $countParentParams);
-      if ($countParentContactSegment == 0) {
-        self::addParent($contactSegment, $segmentParent);
-      } else {
-        self::updateParent($contactSegment, $segmentParent);
-      }
-    } else {
-      self::updateChildren($contactSegment);
-    }
-  }
-
-  /**
-   * Method to set end date for child contact segments if end date is set for parent
-   *
-   * @param $contactSegment
-   * @access private
-   * @static
-   */
-  private static function updateChildren($contactSegment) {
-    $childrenSelect = 'SELECT id FROM civicrm_contact_segment
-      WHERE contact_id = %1 AND role_value = %2 AND segment_id IN(SELECT id FROM civicrm_segment WHERE parent_id = %3)';
-    $selectParams = array(
-      1 => array($contactSegment->contact_id, 'Integer'),
-      2 => array($contactSegment->role_value, 'String'),
-      3 => array($contactSegment->segment_id, 'Integer'));
-    $daoChildren = CRM_Core_DAO::executeQuery($childrenSelect, $selectParams);
-    while ($daoChildren->fetch()) {
-      $childUpdate = 'UPDATE civicrm_contact_segment SET end_date = %1, is_active = %2 WHERE id = %3';
-      if (!$contactSegment->end_date) {
-        $endDate = NULL;
-      } else {
-        $endDate = date('Ymd', strtotime($contactSegment->end_date));
-      }
-      $updateParams = array(
-        1 => array($endDate, 'Date'),
-        2 => array($contactSegment->is_active, 'Integer'),
-        3 => array($daoChildren->id, 'Integer'));
-      CRM_Core_DAO::executeQuery($childUpdate, $updateParams);
-    }
-  }
-
-  /**
-   * Method to update parent contact segment if required
-   *
-   * @param $contactSegment
-   * @param $segmentParent
-   * @access private
-   * @static
-   */
-  private static function updateParent($contactSegment, $segmentParent) {
-    $parentContactSegment = civicrm_api3('ContactSegment', 'Getsingle',
-      array(
-        'contact_id' => $contactSegment->contact_id,
-        'segment_id' => $segmentParent,
-        'role_value' => $contactSegment->role_value));
-    if (!isset($contactSegment->end_date) || empty($contactSegment->end_date)) {
-      $query = 'UPDATE civicrm_contact_segment SET is_active = %1, end_date = %2 WHERE id = %3';
-      $params = array(
-        1 => array(1, 'Integer'),
-        2 => array(NULL, 'Date'),
-        3 => array($parentContactSegment['id'], 'Integer'));
-
-      CRM_Core_DAO::executeQuery($query, $params);
-      $daoParent = CRM_Core_DAO::executeQuery('SELECT * FROM civicrm_contact_segment WHERE id = %1',
-        array(1 => array($parentContactSegment['id'], 'Integer')));
-      if ($daoParent->fetch()) {
-        self::updateChildren($daoParent);
-      }
-    } else {
-      $childEndDate = new DateTime($contactSegment->end_date);
-      $parentEndDate = false;
-      if (!empty($parentContactSegment['end_date'])) {
-        $parentEndDate = new DateTime($parentContactSegment['end_date']);
-      }
-      if ($parentEndDate && $parentEndDate < $childEndDate) {
-        $query = 'UPDATE civicrm_contact_segment SET is_active = %1, end_date = %2 WHERE id = %3';
-        $params = array(
-          1 => array($contactSegment->is_active, 'Integer'),
-          2 => array($childEndDate->format('Ymd'), 'Date'),
-          3 => array($parentContactSegment['id'], 'Integer'));
-        CRM_Core_DAO::executeQuery($query, $params);
-        $daoParent = CRM_Core_DAO::executeQuery('SELECT * FROM civicrm_contact_segment WHERE id = %1',
-          array(1 => array($parentContactSegment['id'], 'Integer')));
-        if ($daoParent->fetch()) {
-          self::updateChildren($daoParent);
-        }
-      }
-    }
-  }
-
-  /**
-   * Method to add parent contact segment if required
-   *
-   * @param $contactSegment
-   * @param $segmentParent
-   * @access private
-   * @static
-   */
-  private static function addParent($contactSegment, $segmentParent) {
-    $parentSegmentParams = array(
-      'contact_id' => $contactSegment->contact_id,
-      'segment_id' => $segmentParent,
-      'role_value' => $contactSegment->role_value,
-      'start_date' => $contactSegment->start_date,
-      'end_date' => $contactSegment->end_date,
-      'is_active' => $contactSegment->is_active);
-    self::add($parentSegmentParams);
-  }
-
-  /**
-   * Method to process start and end date and set is active accordingly
-   * - if end date is set and today or earlier, is_active = 0
-   * - if start_date is set and later than today, is_active = 0
-   * - in all other cases, is_active = 1
-   *
-   * @param array $params
-   * $access private
-   */
-  private function processStartEndDate($params) {
-    $this->is_active = 1;
-    $nowDate = new DateTime();
-    if (isset($params['start_date']) && !empty($params['start_date'])) {
-      $startDate = new DateTime($params['start_date']);
-      if ($startDate > $nowDate) {
-        $this->is_active = 0;
-        return;
-      }
-    }
-    if (isset($params['end_date']) && !empty($params['end_date'])) {
-      $endDate = new DateTime($params['end_date']);
-      if ($endDate <= $nowDate) {
-        $this->is_active = 0;
-      }
-    }
-    return;
   }
 
   /**
