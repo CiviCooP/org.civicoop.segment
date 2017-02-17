@@ -302,6 +302,8 @@ class CRM_Contactsegment_Utils {
    *
    * Returns false when there is no active contact segment for role. Otherwise return the id of the current contact segment
    *
+   * Ignores contact segments where start_date equals end_date
+   *
    * @param $params
    * @return false|int
    */
@@ -322,13 +324,16 @@ class CRM_Contactsegment_Utils {
       foreach ($existingContactSegments['values'] as $existingContactSegment) {
         // no need to check if contact is the same
         if ($existingContactSegment['contact_id'] != $params['contact_id']) {
-          // return id if start_date of params is before end_date of found contact segment
-          if (!isset($existingContactSegment['end_date'])) {
-            return $existingContactSegment['id'];
-          } else {
-            $endDate = new DateTime($existingContactSegment['end_date']);
-            if ($startDate <= $endDate) {
+          // no need to check if start_date equals end_date
+          if (!empty($existingContactSegment['end_date']) && ['start_date'] == $existingContactSegment['end_date']) {
+            // return id if start_date of params is before end_date of found contact segment
+            if (!isset($existingContactSegment['end_date'])) {
               return $existingContactSegment['id'];
+            } else {
+              $endDate = new DateTime($existingContactSegment['end_date']);
+              if ($startDate <= $endDate) {
+                return $existingContactSegment['id'];
+              }
             }
           }
         }
