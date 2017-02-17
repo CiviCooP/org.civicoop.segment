@@ -325,7 +325,7 @@ class CRM_Contactsegment_Utils {
         // no need to check if contact is the same
         if ($existingContactSegment['contact_id'] != $params['contact_id']) {
           // no need to check if start_date equals end_date
-          if (!empty($existingContactSegment['end_date']) && ['start_date'] == $existingContactSegment['end_date']) {
+          if (empty($existingContactSegment['end_date']) || $existingContactSegment['start_date'] != $existingContactSegment['end_date']) {
             // return id if start_date of params is before end_date of found contact segment
             if (!isset($existingContactSegment['end_date'])) {
               return $existingContactSegment['id'];
