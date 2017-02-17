@@ -327,7 +327,7 @@ class CRM_Contactsegment_Form_ContactSegment extends CRM_Core_Form {
   /**
    * Method to check if the entered start_date in $fields is allowed in combination with the
    * $foundContactSegment
-   * 
+   *
    * @param $fields
    * @param $foundContactSegment
    * @return bool
