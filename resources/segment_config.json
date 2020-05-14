@@ -8,7 +8,7 @@
             },
             "recruitment_team_member": {
                 "label": "Recruitment Team Member",
-                "unique": "0"
+                "unique": "1"
             },
             "country": {
                 "label": "Country",
@@ -18,13 +18,13 @@
                 "label": "Customer",
                 "unique": "0"
             },
-            "other": {
-                "label": "Other",
-                "unique": "0"
-            },
             "expert": {
                 "label": "Expert",
                 "unique": "0"
+            },
+            "sector_coordinator_(shared)": {
+                "label": "Sector Coordinator (shared)",
+                "unique": "1"
             }
         }
     },
@@ -33,10 +33,6 @@
         "roles": {
             "expert": {
                 "label": "Expert",
-                "unique": "0"
-            },
-            "other": {
-                "label": "Other",
                 "unique": "0"
             }
         }
